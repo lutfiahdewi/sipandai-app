@@ -1,0 +1,31 @@
+{
+  "name": "nuxt-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev --host",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@nuxt/icon": "^1.15.0",
+    "@nuxt/image": "^1.10.0",
+    "@nuxtjs/supabase": "^1.6.0",
+    "flowbite": "^3.1.2",
+    "nuxt": "^4.0.1",
+    "vue": "^3.5.17",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@iconify-json/hugeicons": "^1.2.6",
+    "@iconify-json/logos": "^1.2.5",
+    "@iconify-json/skill-icons": "^1.2.0",
+    "@supabase/supabase-js": "^2.53.0",
+    "@tailwindcss/vite": "^4.1.11",
+    "@types/css-modules": "^1.0.5",
+    "tailwindcss": "^4.1.11",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}
