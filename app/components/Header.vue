@@ -5,10 +5,19 @@ const toggleMobileMenu = () => {
   isOpen.value = !isOpen.value;
   console.log(isOpen.value);
 };
+interface menu {
+  name: string;
+  url: string;
+  desc?: string;
+}
+const menuItems: menu[] = [
+  { name: "Beranda", url: "/" },
+  { name: "Tentang", url: "/about" },
+];
 </script>
 
 <template>
-  <header class="sticky top-0 bg-slate-100 shadow-md opacity-95">
+  <header class="sticky top-0 z-99 bg-slate-200 shadow-md opacity-95">
     <div
       :class="
         DEFAULT_PADDING_X +
@@ -17,7 +26,7 @@ const toggleMobileMenu = () => {
       "
     >
       <!-- logo-nama  -->
-      <BpsLogo />
+      <BpsLogo color="black" />
       <!-- Hamburger (only on small screens) -->
       <button
         class="flex sm:hidden focus:outline-none items-center"
@@ -40,14 +49,13 @@ const toggleMobileMenu = () => {
 
       <!-- Desktop Menu -->
       <nav class="hidden sm:flex space-x-6 items-center justify-between">
-        <NuxtLink to="/" class="text-gray-700 hover:text-blue-600"
-          >Beranda</NuxtLink
-        >
-        <NuxtLink to="/" class="text-gray-700 hover:text-blue-600"
-          >Kategori</NuxtLink
-        >
-        <NuxtLink to="/" class="text-gray-700 hover:text-blue-600"
-          >Tentang</NuxtLink
+        <InputSearch />
+        <NuxtLink
+          v-for="item in menuItems"
+          :to="item.url"
+          :title="item.desc"
+          class="text-gray-700 hover:text-orange-600"
+          >{{ item.name }}</NuxtLink
         >
       </nav>
     </div>
@@ -57,20 +65,13 @@ const toggleMobileMenu = () => {
       v-if="isOpen"
       class="sm:hidden p-2 bg-slate-200 border-t border-gray-500"
     >
+      <InputSearch />
       <NuxtLink
-        to="/"
-        class="block text-gray-700 hover:text-blue-600 hover:bg-slate-300 rounded-b-lg p-2"
-        >Beranda</NuxtLink
-      >
-      <NuxtLink
-        to="/kategori"
-        class="block text-gray-700 hover:text-blue-600 hover:bg-slate-300 rounded-b-lg p-2"
-        >Kategori</NuxtLink
-      >
-      <NuxtLink
-        to="/tentang"
-        class="block text-gray-700 hover:text-blue-600 hover:bg-slate-300 rounded-b-lg p-2"
-        >Tentang</NuxtLink
+        v-for="item in menuItems"
+        :to="item.url"
+        class="block text-gray-700 hover:text-orange-600 hover:bg-slate-300 rounded-lg p-2 mb-1"
+        :title="item.desc"
+        >{{ item.name }}</NuxtLink
       >
     </nav>
   </header>

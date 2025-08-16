@@ -11,6 +11,9 @@ export default defineNuxtConfig({
       tailwindcss(),
       tsconfigPaths()
     ],
+    server: {
+        allowedHosts: ['bpspolman.ddns.net'],
+      },
   },
   modules: ['@nuxt/image', '@nuxt/icon', '@nuxtjs/supabase'],
   supabase: {

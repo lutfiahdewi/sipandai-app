@@ -1,68 +1,105 @@
 <script setup lang="ts">
-import useGetImageUrl from '~/composables/useGetImageUrl'
+import _ from "lodash";
+import type { Database } from '~/types/supabase'
+import useGetImageUrl from "~/composables/useGetImageUrl";
+
 definePageMeta({
   layout: false,
-})
+});
 useHead({
-    title:"Beranda"
-})
- const supabase = useSupabaseClient()
+  title: "Beranda",
+});
 
-const categories = ref([])
+const supabase = useSupabaseClient<Database>();
+const categories: Ref<Database['public']['Tables']['categories']['Row'][]> = ref([]);
+const mainCategory: Ref<Database['public']['Tables']['categories']['Row'] | undefined> = ref();
+const mainDocuments: Ref<(Database['public']['Tables']['documents']['Row'])[]> = ref([]);
 
 onMounted(async () => {
   const { data, error } = await supabase
-    .from('categories')
-    .select('id, name, icon_path')
+    .from("categories")
+    .select("*");
 
-  if (!error) categories.value = data
-})
-      
+  if (!error) {
+    mainCategory.value = _.remove(data, { name: "Main" })[0];
+    categories.value = data;
+  }
+
+  const { data: dataAplikasi, error: errorAplikasi } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("category_id", mainCategory.value.id);
+
+  if (!errorAplikasi) mainDocuments.value = dataAplikasi;
+  
+});
 </script>
 
 <template>
-  <Header/>
-  <div class="space-y-8 py-8 sm:space-y-12 sm:pb-12 sm:pt-0">
+  <Header />
+  <div class="">
     <!-- Banner Section -->
-    <section class="-px-8 max-h-[70vh] flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden">
-      <!-- Left section -->
-      <div class="px-4 sm:px-8 lg:px-16">
-        <h1 class="mb-4 sm:mb-6 lg:mb-10 text-3xl sm:text-5xl lg:text-7xl font-bold text-gray-800 text-center sm:text-left">SIPANDAI</h1>
-        <p class="mb-4 sm:mb-6 lg:mb-10 text-2xl sm:text-4xl lg:text-5xl font-semibold text-gray-600 text-center sm:text-left">Sistem Informasi Pengelolaan Arsip Digital dan Integrasi</p>
-        <div class="flex justify-center sm:justify-start gap-x-4 mb-2">
+    <section class="relative w-full">
+    <img
+      src="~/assets/img/front.jpg"
+      alt="Hero"
+      class="w-screen h-auto"
+    />
+    <div class="absolute inset-0 bg-gray-800 opacity-50"></div>
+
+    <div class="absolute inset-0 px-8 sm:px-32 lg:px-48 flex flex-col items-center justify-center ">
+        <h1
+          class="mb-2 sm:mb-4 lg:mb-6 text-3xl sm:text-6xl lg:text-8xl font-bold text-slate-50 text-center text-shadow-lg bg-orange-400 p-2 rounded-lg"
+        >
+          SIPANDAI
+        </h1>
+        <p
+          class="mb-2 sm:mb-6 lg:mb-10 text-lg sm:text-3xl lg:text-6xl font-semibold text-slate-200 text-center"
+        >
+          Sistem Informasi Pengelolaan Arsip Digital Terintegrasi
+        </p>
+        <div class="flex justify-center sm:justify-start gap-x-4 mb-2 lg:mb-64">
           <NuxtLink to="/login">
-            <button type="button" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm sm:text-base lg:text-lg px-5 py-2.5 focus:outline-none ">Admin</button>
+            <button
+              type="button"
+              class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm sm:text-base lg:text-lg px-5 py-2.5 focus:outline-none"
+            >
+              Admin
+            </button>
           </NuxtLink>
-          <button type="button" class="text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm sm:text-base lg:text-lg px-5 py-2.5 text-center ">Default</button>
+          <button
+            type="button"
+            class="hidden text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm sm:text-base lg:text-lg px-5 py-2.5 text-center"
+          >
+            Default
+          </button>
         </div>
       </div>
-      <!-- Right section-->
-      <div class="rounded-lg w-full sm:max-w-1/2 r">
-        <img
-        src="~/assets/img/main.jpg"
-        alt="Maskot atau Kantor"
-        class="object-cover"
-        />
-      </div>
-    </section>
-
+  </section>
+    <!-- Main App Section -->
+    <SectionList title="Aplikasi BPS Pusat dan Provinsi" section-class="bg-orange-100 " >
+      <CardLink
+        v-for="doc in mainDocuments"
+        :key="doc.id"
+        :id="doc.id"
+        :name="doc.name"
+        :desc="doc.description"
+        :icon-path="useGetImageUrl(doc.icon_path, supabase)"
+        :url="doc.url"
+      />
+    </SectionList>
+    <hr class="border-gray-500">
     <!-- Category Section -->
-    <section :class="DEFAULT_PADDING_X + DEFAULT_PADDING_Y_LG + ''">
-      <h2 class="text-lg sm:text-xl lg:text-2xl text-center font-semibold text-gray-700 mb-4">Kategori</h2>
-      <div class="flex flex-col sm:flex-row sm:flex-wrap gap-y-4 sm:gap-x-8 lg:gap-x-12">
-        <CardCategory
-          v-for="cat in categories"
-          :key="cat.id"
-          :id="cat.id"
-          :name="cat.name"
-          :icon-path="useGetImageUrl(cat.icon_path, supabase)"
-        />
-      </div>
-      <a href="https://www.flaticon.com/free-icons/population" title="population icons">Population icons created by Freepik - Flaticon</a>
-    </section>
+    <SectionList id="categoryList" title="Kategori tim dan lain-lain" title-class="text-orange-600">
+      <CardCategory
+        v-for="cat in categories"
+        :key="cat.id"
+        :id="cat.id"
+        :name="cat.name"
+        :icon-path="useGetImageUrl(cat.icon_path, supabase)"
+      />
+    </SectionList>
   </div>
 
-  <Footer/>
+  <Footer />
 </template>
-
-
