@@ -6,10 +6,13 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   css: ['~/assets/css/main.css',],
+  plugins:[
+    { src: '~/plugins/vue-good-table-next', ssr: false },
+  ],
   vite: {
     plugins: [
       tailwindcss(),
-      tsconfigPaths()
+      tsconfigPaths(),
     ],
     server: {
         allowedHosts: ['bpspolman.ddns.net'],

@@ -1,96 +1,126 @@
+<script setup lang="ts">
+import { useRoute } from "vue-router";
+import { useSupabaseClient } from "#imports";
+import { ref, onMounted } from "vue";
+import type { Database } from "~/types/supabase";
+import type { QueryResult, QueryData, QueryError } from "@supabase/supabase-js";
+
+const route = useRoute();
+const supabase = useSupabaseClient();
+
+const category: Ref<Database["public"]["Tables"]["categories"]["Row"] | null> =
+  ref(null);
+const subcategories: Ref<
+  Database["public"]["Tables"]["subcategories1"]["Row"][]
+> = ref([]);
+const documents: Ref<
+  Database["public"]["Tables"]["documents"]["Row"][]
+> = ref([]);
+const pending = ref(true);
+
+onMounted(async () => {
+  const categoryId = route.params.id;
+  const queryAll = supabase
+    .from("categories")
+    .select(
+      `
+    *,
+    subcategories1(*),
+    documents(*)
+  `
+    )
+    .eq("id", categoryId)
+    .single();
+
+  type QueryAll = QueryData<typeof queryAll>;
+  const { data, error } = await queryAll;
+  if (error) throw error;
+  const result: QueryAll = data;
+  console.log(result);
+
+  category.value = result;
+  subcategories.value = result.subcategories1;
+  documents.value = result.documents;
+
+  // const { data, error } = await supabase
+  //   .from("categories")
+  //   .select(
+  //     `
+  //   (id, name, icon_path, description,photo_path)`
+  //   )
+  //   .eq("id", categoryId) // categoryId from router params
+  //   .single();
+
+  // const { data: subcategories, error: errorSubcategories } = await supabase
+  //   .from("subcategories1")
+  //   .select("id, name, icon_path, description")
+  //   .eq("category_id", categoryId);
+
+  // console.log(subcategories);
+  // console.log(data);
+
+  // if (!error) {
+  //   category.value = data;
+  // } else {
+  //   console.log(error);
+  // }
+
+  pending.value = false;
+});
+useHead({
+  title: category.value?.name,
+});
+</script>
+
 <template>
-  <div class="p-6 space-y-6">
+  <div class="">
     <!-- Loading -->
-    <div v-if="pending">Loading...</div>
+    <div v-if="pending"><IndicatorLoading /></div>
 
-    <!-- Kategori Detail -->
     <div v-else>
-      <h1 class="text-3xl font-bold text-gray-800">{{ category.name }}</h1>
-
-      <div class="mt-4">
+      <!-- Kategori Deskripsi -->
+      <SectionList
+        v-if="category"
+        :title="category.name"
+        :section-class="DEFAULT_PADDING_X_MINUS + ' pt-4 bg-orange-100 '"
+        title-class="text-3xl sm:text-4xl lg:text-6xl font-bold text-gray-800"
+      >
         <!-- Gambar float kiri -->
-          <img
-          v-if="category.photo_path"
-          :src="getImageUrl(category.photo_path)"
-          alt="Category Photo"
-          class="float-left w-96 mr-4 mb-2 rounded-xl object-contain shadow"
-          />
-        <!-- Teks deskripsi yang membungkus -->
-        <p v-if="category.description" class="inline text-gray-700 text-lg">
-          {{ category.description }}
-        </p>
-      </div>
-
-      <div class="p-8 w-96 bg-red-300 h-24 border rounded-xl shadow">
         <img
           v-if="category.photo_path"
-          :src="getImageUrl(category.photo_path)"
-          alt="Category Photo"
-          class="object-contain mr-4 mb-2 "
-          />
-      </div>
+          :src="useGetImageUrl(category.photo_path, supabase)"
+          :alt="'Foto ' + category.name"
+          :title="'Foto ' + category.name"
+          class="lg:float-left w-full lg:max-w-180 mr-4 mb-2 rounded-xl object-contain shadow"
+        />
+        <!-- Teks deskripsi -->
+        <p
+          v-if="category.description"
+          class="text-gray-700 text-base sm:text-lg"
+        >
+          {{ category.description }}
+        </p>
+      </SectionList>
       <!-- Subkategori -->
-      <div class="mt-10">
-        <h2 class="text-2xl font-semibold mb-4 text-gray-700">Subcategories</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div
-            v-for="sub in subcategories"
-            :key="sub.id"
-            class="p-4 border rounded-xl shadow hover:shadow-md bg-white flex items-center gap-4"
-          >
-            <img
-              v-if="sub.icon_path"
-              :src="getImageUrl(sub.icon_path)"
-              alt="Subcategory Icon"
-              class="w-12 h-12 object-contain"
-            />
-            <div>
-              <h3 class="text-lg font-semibold text-gray-800">{{ sub.name }}</h3>
-              <p v-if="sub.description" class="text-sm text-gray-600">{{ sub.description }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SectionList
+        v-if="true"
+        id="categoryList"
+        title="Subkategori"
+        section-class=""
+        title-class="text-orange-600"
+      >
+        <CardCategory
+          v-for="cat in subcategories"
+          :key="cat.id"
+          :id="cat.id"
+          :name="cat.name"
+          :icon-path="useGetImageUrl(cat.icon_path, supabase)"
+        />
+      </SectionList>
+      <!-- Dokumen dibawah kategori ini -->
+      <SectionList v-if="documents" title="Dokumen dan lain-lain" section-class="border-t border-slate-600 ">
+        <!-- <CardLink/> -->
+      </SectionList>
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { useRoute } from 'vue-router'
-import { useSupabaseClient } from '#imports'
-import { ref, onMounted } from 'vue'
-
-const route = useRoute()
-const supabase = useSupabaseClient()
-
-const category = ref({})
-const subcategories = ref([])
-const pending = ref(true)
-
-function getImageUrl(path: string) {
-  return supabase.storage.from('uploads').getPublicUrl(path).data.publicUrl
-}
-
-onMounted(async () => {
-  const id = route.params.id
-
-  // Ambil kategori
-  const { data: cat, error: err1 } = await supabase
-    .from('categories')
-    .select('*')
-    .eq('id', id)
-    .single()
-
-  if (!err1) category.value = cat
-
-  // Ambil subkategori
-  const { data: subs, error: err2 } = await supabase
-    .from('subcategories')
-    .select('*')
-    .eq('category_id', id)
-
-  if (!err2) subcategories.value = subs
-
-  pending.value = false
-})
-</script>

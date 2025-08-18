@@ -27,13 +27,14 @@ const socmedList: socmed[] = [
     url: "https://www.facebook.com/profile.php?id=61562282248459",
   },
 ];
+//  bg-radial-[at_50%_75%] from-orange-400 from-66% to-orange-600
 </script>
 <template>
   <footer
     :class="
       DEFAULT_PADDING_X +
       DEFAULT_PADDING_Y_MD +
-      ' bg-radial-[at_50%_75%] from-orange-400 from-50% to-orange-600 to-200% text-white'
+      ' bg-linear-to-t from-orange-300 to-amber-600  text-white z-98'
     "
   >
     <!-- konten -->

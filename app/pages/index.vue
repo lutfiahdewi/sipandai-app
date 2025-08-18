@@ -1,34 +1,38 @@
 <script setup lang="ts">
 import _ from "lodash";
-import type { Database } from '~/types/supabase'
+import type { Database } from "~/types/supabase";
 import useGetImageUrl from "~/composables/useGetImageUrl";
 
-definePageMeta({
-  layout: false,
-});
 useHead({
   title: "Beranda",
 });
 
 const supabase = useSupabaseClient<Database>();
-const categories: Ref<Database['public']['Tables']['categories']['Row'][]> = ref([]);
-const mainCategory: Ref<Database['public']['Tables']['categories']['Row'] | undefined> = ref();
-const mainDocuments: Ref<(Database['public']['Tables']['documents']['Row'])[]> = ref([]);
+const categories: Ref<Database["public"]["Tables"]["categories"]["Row"][]> =
+  ref([]);
+// const mainCategory: Ref<Database["public"]["Tables"]["categories"]["Row"] | undefined> = ref()
+const mainDocuments: Ref<Database["public"]["Tables"]["documents"]["Row"][]> =
+  ref([]);
 
 onMounted(async () => {
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*");
-
+  const { data, error } = await supabase.from("categories").select("*");
   if (!error) {
-    mainCategory.value = _.remove(data, { name: "Main" })[0];
+    _.remove(data, { name: "Main" });
     categories.value = data;
   }
 
   const { data: dataAplikasi, error: errorAplikasi } = await supabase
     .from("documents")
-    .select("*")
-    .eq("category_id", mainCategory.value.id);
+    .select(
+      `
+    *,
+    categories!inner (
+      id,
+      name
+    )
+  `
+    )
+    .eq("categories.name", "Main"); // filter pakai nama kategori
 
   if (!errorAplikasi) mainDocuments.value = dataAplikasi;
   
@@ -36,18 +40,15 @@ onMounted(async () => {
 </script>
 
 <template>
-  <Header />
-  <div class="">
+  <div :class="DEFAULT_PADDING_X_MINUS">
     <!-- Banner Section -->
     <section class="relative w-full">
-    <img
-      src="~/assets/img/front.jpg"
-      alt="Hero"
-      class="w-screen h-auto"
-    />
-    <div class="absolute inset-0 bg-gray-800 opacity-50"></div>
+      <img src="~/assets/img/front.jpg" alt="Hero" class="w-screen h-auto" />
+      <div class="absolute inset-0 bg-gray-800 opacity-50"></div>
 
-    <div class="absolute inset-0 px-8 sm:px-32 lg:px-48 flex flex-col items-center justify-center ">
+      <div
+        class="absolute inset-0 px-8 sm:px-32 lg:px-48 flex flex-col items-center justify-center"
+      >
         <h1
           class="mb-2 sm:mb-4 lg:mb-6 text-3xl sm:text-6xl lg:text-8xl font-bold text-slate-50 text-center text-shadow-lg bg-orange-400 p-2 rounded-lg"
         >
@@ -75,9 +76,12 @@ onMounted(async () => {
           </button>
         </div>
       </div>
-  </section>
+    </section>
     <!-- Main App Section -->
-    <SectionList title="Aplikasi BPS Pusat dan Provinsi" section-class="bg-orange-100 " >
+    <SectionList
+      title="Aplikasi BPS Pusat dan Provinsi"
+      section-class="bg-orange-100 "
+    >
       <CardLink
         v-for="doc in mainDocuments"
         :key="doc.id"
@@ -88,9 +92,13 @@ onMounted(async () => {
         :url="doc.url"
       />
     </SectionList>
-    <hr class="border-gray-500">
+    <hr class="border-gray-500" />
     <!-- Category Section -->
-    <SectionList id="categoryList" title="Kategori tim dan lain-lain" title-class="text-orange-600">
+    <SectionList
+      id="categoryList"
+      title="Kategori tim dan lain-lain"
+      title-class="text-orange-600"
+    >
       <CardCategory
         v-for="cat in categories"
         :key="cat.id"
@@ -100,6 +108,4 @@ onMounted(async () => {
       />
     </SectionList>
   </div>
-
-  <Footer />
 </template>

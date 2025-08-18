@@ -17,7 +17,7 @@ const menuItems: menu[] = [
 </script>
 
 <template>
-  <header class="sticky top-0 z-99 bg-slate-200 shadow-md opacity-95">
+  <header class="sticky top-0 z-99 bg-slate-200 shadow-md">
     <div
       :class="
         DEFAULT_PADDING_X +
@@ -29,7 +29,7 @@ const menuItems: menu[] = [
       <BpsLogo color="black" />
       <!-- Hamburger (only on small screens) -->
       <button
-        class="flex sm:hidden focus:outline-none items-center"
+        class="flex sm:hidden focus:outline-none items-center hover:bg-slate-300 p-1 rounded-lg"
         @click="toggleMobileMenu"
         aria-label="Toggle menu"
       >
