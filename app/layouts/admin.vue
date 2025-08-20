@@ -9,7 +9,11 @@ const toggleSidebar = () => {
 const supabase = useSupabaseClient()
 const signOut = async () => {
   const { error } = await supabase.auth.signOut()
-  if (error) console.log(error)
+  if (error){ console.log(error)
+    reloadNuxtApp();
+  }else[
+    navigateTo('/')
+  ]
 }
 const adminMenu = [
   {
@@ -58,13 +62,13 @@ const adminMenu = [
             <p>Kelola tautan dokumen</p>
           </div>
           <ul
-            class="space-y-2 font-medium bg-slate-100 text-slate-800 rounded-lg"
+            class="space-y-2 font-medium bg-slate-50 text-slate-800 rounded-lg"
           >
             <li>
               <NuxtLink
                 v-for="menu in adminMenu"
                 :to="menu.url"
-                class="flex items-center p-2 sm:p-3 rounded-lg hover:bg-slate-200 group border-t border-slate-500"
+                class="flex items-center p-2 sm:p-3 hover:bg-slate-200 group border-t border-slate-500"
               >
                 <Icon
                   :name="menu.icon"

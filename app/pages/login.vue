@@ -94,7 +94,7 @@ async function login() {
           "
           :disabled="isLoading"
         >
-          <IconLoading v-if="isLoading" class="inline h-auto me-1" />
+          <IconLoading v-if="isLoading" class="inline h-full w-auto me-1" />
           Submit
         </button>
         <div

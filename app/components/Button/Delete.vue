@@ -3,28 +3,60 @@ import type { ModalBase } from "#components";
 
 defineProps<{
   id: string;
+  name: string;
+  table: string;
 }>();
 const modal = ref<InstanceType<typeof ModalBase> | null>(null);
+
+const supabase = useSupabaseClient();
+async function deleteData(table: string, id: string) {
+  const { data, error } = await supabase
+    .from(table)
+    .delete()
+    .eq("id", id)
+    .select();
+  if (error) {
+    alert("Gagal");
+    throw console.log(error);
+    return;
+  }
+  reloadNuxtApp();
+
+}
 </script>
 
 <template>
   <ModalBase
     ref="modal"
-    class-modal="w-full sm:max-w-[580px] lg:max-w-[980px]"
-    class-header=" text-slate-800 font-semibold text-base sm:text-xl"
-    class-body=" max-h-[60vh] sm:max-h-[65vh] "
+    class-modal=" w-full sm:max-w-[400px] lg:max-w-[700px] text-base sm:text-lg"
+    class-header=" bg-red-400 text-slate-800 font-semibold text-base sm:text-xl"
+    class-body=" h-fit "
     class-footer="  "
   >
     <template #header>
-      <span>Tambah kategori baru</span>
+      <span>Hapus Kategori</span>
     </template>
     <template #body>
-      <div class="hidden form">
-        <label for="block name mb-3">Nama </label>
-        <input id="name" type="text" class="w-full rounded-lg text-slate-800" />
+        <h5 class="text-center">
+          Anda yakin akan menghapus kategori {{ name }} ?
+        </h5>
+    </template>
+    <template #footer>
+      <div class="flex justify-center gap-x-3 text-sm sm:text-lg">
+        <button
+          @click="deleteData(table, id)"
+          class="p-1 sm:p-2 min-w-18 sm:min-w-24 bg-red-500 hover:bg-red-600 focus:ring-4 focus:outline-none focus:ring-red-400 rounded-lg"
+        >
+          Ya
+        </button>
+        <button
+          @click="modal?.close"
+          class="p-1 sm:p-2 min-w-18 sm:min-w-24 bg-slate-300 rounded-lg hover:bg-slate-400 focus:ring-4 focus:outline-none focus:ring-slate-300"
+        >
+          Batal
+        </button>
       </div>
     </template>
-    <template #footer></template>
   </ModalBase>
   <button type="button" @click="modal?.open()">
     <IconDelete

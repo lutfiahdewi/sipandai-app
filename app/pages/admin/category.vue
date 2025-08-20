@@ -5,6 +5,7 @@ import type { Database } from "~/types/supabase";
 definePageMeta({
   layout: "admin",
 });
+const tableName = "categories"
 const newCategory = ref<InstanceType<typeof ModalBase> | null>(null);
 const columns = [
   {
@@ -38,18 +39,9 @@ const columns = [
   },
 ];
 
-const rows = [
-  { id: 1, name: "John", age: 20, createdAt: null, score: 0.03343 },
-  { id: 2, name: "Jane", age: 24, createdAt: "2011-10-31", score: 0.03343 },
-  { id: 3, name: "Susan", age: 16, createdAt: "2011-10-30", score: 0.03343 },
-  { id: 4, name: "Chris", age: 55, createdAt: "2011-10-11", score: 0.03343 },
-  { id: 5, name: "Dan", age: 40, createdAt: "2011-10-21", score: 0.03343 },
-  { id: 6, name: "John", age: 20, createdAt: "2011-10-31", score: 0.03343 },
-];
-
 async function saveCategory(values: any) {
   const client = useSupabaseClient();
-  const { error } = await client.from("categories").insert(values);
+  const { error } = await client.from(tableName).insert(values);
 
   if (error) {
     console.error(error);
@@ -63,7 +55,7 @@ const categories: Ref<Database["public"]["Tables"]["categories"]["Row"][]> =
 const supabase = useSupabaseClient();
 onMounted(async () => {
   const { data, error } = await supabase
-    .from("categories")
+    .from(tableName)
     .select("id, name, description, icon_path, photo_path, created_at::date");
   if (!error) {
     categories.value = data;
@@ -114,7 +106,7 @@ onMounted(async () => {
       >
         <template #table-row="props">
           <span v-if="props.column.field == 'id'" class="flex gap-x-3">
-            <button-delete :id="props.row.id" /><button-edit />
+            <button-delete :id="props.row.id" :name="props.row.name" :table="tableName"/><button-edit />
           </span>
           <span v-else-if="props.column.field == 'description'">
             <p class="line-clamp-3">{{ props.row.description }}</p>
