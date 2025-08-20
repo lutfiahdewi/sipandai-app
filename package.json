@@ -13,11 +13,10 @@
     "@nuxt/icon": "^1.15.0",
     "@nuxt/image": "^1.10.0",
     "@nuxtjs/supabase": "^1.6.0",
-    "@vueup/vue-quill": "^1.2.0",
+    "@tinymce/tinymce-vue": "^6.3.0",
     "flowbite": "^3.1.2",
     "lodash": "^4.17.21",
     "nuxt": "^4.0.1",
-    "vee-validate": "^4.15.1",
     "vue": "^3.5.17",
     "vue-good-table-next": "^0.2.2",
     "vue-router": "^4.5.1",
@@ -31,8 +30,13 @@
     "@tailwindcss/vite": "^4.1.11",
     "@types/css-modules": "^1.0.5",
     "@types/lodash": "^4.17.20",
+    "@vee-validate/nuxt": "^4.15.1",
+    "@vueuse/components": "^13.7.0",
+    "@vueuse/core": "^13.7.0",
+    "@vueuse/nuxt": "^13.7.0",
     "supabase": "^2.34.3",
     "tailwindcss": "^4.1.11",
+    "vee-validate": "^4.15.1",
     "vite-tsconfig-paths": "^5.1.4"
   }
 }

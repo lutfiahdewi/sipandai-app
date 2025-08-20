@@ -18,7 +18,7 @@ export default defineNuxtConfig({
         allowedHosts: ['bpspolman.ddns.net'],
       },
   },
-  modules: ['@nuxt/image', '@nuxt/icon', '@nuxtjs/supabase'],
+  modules: ['@nuxt/image', '@nuxt/icon', '@nuxtjs/supabase', '@vee-validate/nuxt'],
   supabase: {
     redirect: false,
   }

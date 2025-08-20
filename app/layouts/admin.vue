@@ -6,6 +6,11 @@ const isOpen = ref(false);
 const toggleSidebar = () => {
   isOpen.value = !isOpen.value;
 };
+const supabase = useSupabaseClient()
+const signOut = async () => {
+  const { error } = await supabase.auth.signOut()
+  if (error) console.log(error)
+}
 const adminMenu = [
   {
     name: "Kategori utama",
@@ -45,7 +50,7 @@ const adminMenu = [
       :class="{ 'translate-x-0': isOpen }"
     >
       <div
-        class="flex flex-col justify-between h-full px-3 pt-12 sm:pt-24 overflow-y-auto bg-linear-to-t from-amber-300 to-orange-500 text-slate-50"
+        class="flex flex-col justify-between h-full px-3 pt-16 sm:pt-24 overflow-y-auto bg-linear-to-t from-amber-300 to-orange-500 text-slate-50"
       >
         <div class="top-sectiom">
           <div class="admin-title text-center mb-3">
@@ -71,8 +76,8 @@ const adminMenu = [
             </li>
           </ul>
         </div>
-        <div class="bottom-section">
-          <ButtonDefault name="logout" class="bg-blue-600 hover:bg-blue-700 w-full justify-center px-0">
+        <div class="bottom-section mb-24 sm:mb-8">
+          <ButtonDefault name="logout" class="bg-blue-600 hover:bg-blue-700 w-full justify-center px-0" @click="signOut">
             <span> Logout</span>
           </ButtonDefault>
         </div>

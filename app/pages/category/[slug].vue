@@ -19,7 +19,7 @@ const documents: Ref<
 const pending = ref(true);
 
 onMounted(async () => {
-  const categoryId = route.params.id;
+  const categorySlug = route.params.slug;
   const queryAll = supabase
     .from("categories")
     .select(
@@ -29,7 +29,7 @@ onMounted(async () => {
     documents(*)
   `
     )
-    .eq("id", categoryId)
+    .eq("slug", categorySlug)
     .single();
 
   type QueryAll = QueryData<typeof queryAll>;
@@ -41,29 +41,6 @@ onMounted(async () => {
   category.value = result;
   subcategories.value = result.subcategories1;
   documents.value = result.documents;
-
-  // const { data, error } = await supabase
-  //   .from("categories")
-  //   .select(
-  //     `
-  //   (id, name, icon_path, description,photo_path)`
-  //   )
-  //   .eq("id", categoryId) // categoryId from router params
-  //   .single();
-
-  // const { data: subcategories, error: errorSubcategories } = await supabase
-  //   .from("subcategories1")
-  //   .select("id, name, icon_path, description")
-  //   .eq("category_id", categoryId);
-
-  // console.log(subcategories);
-  // console.log(data);
-
-  // if (!error) {
-  //   category.value = data;
-  // } else {
-  //   console.log(error);
-  // }
 
   pending.value = false;
 });

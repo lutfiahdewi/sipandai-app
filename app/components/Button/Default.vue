@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   name: string;
   class?: string;
 }>();
@@ -9,8 +9,8 @@ defineProps<{
   <button
     type="button"
     :title="name"
-    class="flex items-center font-medium rounded-lg text-sm sm:text-lg lg:text-xl px-5 py-2.5 text-center me-2 mb-3 sm:mb-6"
-    :class="class"
+    :class="`${props.class} flex items-center font-medium rounded-lg text-sm sm:text-base lg:text-lg px-5 py-2.5 text-center me-2`"
+    @click="$emit('click')"
   >
     <slot />
   </button>

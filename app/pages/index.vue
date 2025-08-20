@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import _ from "lodash";
 import type { Database } from "~/types/supabase";
+import _ from "lodash";
 import useGetImageUrl from "~/composables/useGetImageUrl";
 
 useHead({
@@ -15,9 +15,9 @@ const mainDocuments: Ref<Database["public"]["Tables"]["documents"]["Row"][]> =
   ref([]);
 
 onMounted(async () => {
-  const { data, error } = await supabase.from("categories").select("*");
+  const { data, error } = await supabase.from("categories").select("id, name, description, icon_path, slug");
   if (!error) {
-    _.remove(data, { name: "Main" });
+    _.remove(data, { name: "Main" }); //Exclude the main category
     categories.value = data;
   }
 
@@ -28,14 +28,14 @@ onMounted(async () => {
     *,
     categories!inner (
       id,
-      name
+      name,
+      slug
     )
   `
     )
     .eq("categories.name", "Main"); // filter pakai nama kategori
 
   if (!errorAplikasi) mainDocuments.value = dataAplikasi;
-  
 });
 </script>
 
@@ -104,6 +104,7 @@ onMounted(async () => {
         :key="cat.id"
         :id="cat.id"
         :name="cat.name"
+        :slug="cat.slug"
         :icon-path="useGetImageUrl(cat.icon_path, supabase)"
       />
     </SectionList>

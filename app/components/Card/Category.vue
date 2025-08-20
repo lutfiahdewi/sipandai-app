@@ -1,14 +1,15 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   name:  string,
   id:  string,
   iconPath:  string,
   desc?:  string | null,
+  slug?:  string | null,
 }>();
 </script>
 <template>
   <NuxtLink
-    :to="'/category/' +id"
+    :to="'/category/' +props.slug"
     class="flex items-center gap-x-2 sm:gap-x-4 bg-slate-100 hover:bg-slate-200 shadow-md px-3 sm:px-6 rounded-2xl hover:shadow-lg transition-all duration-300 cursor-pointer"
   >
     <NuxtImg

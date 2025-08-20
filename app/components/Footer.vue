@@ -33,7 +33,7 @@ const socmedList: socmed[] = [
   <footer
     :class="
       DEFAULT_PADDING_X +
-      DEFAULT_PADDING_Y_MD +
+      DEFAULT_PADDING_Y +
       ' bg-linear-to-t from-orange-300 to-amber-600  text-white z-98'
     "
   >
@@ -81,7 +81,7 @@ const socmedList: socmed[] = [
       </div>
     </div>
     <!-- separator dan copyright -->
-    <div class="cr pt-4 sm:pt-8 border-t border-white">
+    <div class="pt-2 sm:pt-4 border-t border-white">
       <p class="text-xs sm:text-base lg:text-lg text-center">
         &copy; BPS Kabupaten Polewali Mandar 2025
       </p>
