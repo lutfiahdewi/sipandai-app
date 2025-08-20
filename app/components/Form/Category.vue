@@ -1,127 +1,171 @@
 <script setup lang="ts">
-import { Form, Field, ErrorMessage, useForm } from "vee-validate";
-import { categorySchema } from "~/utils/schema";
-
-const emit = defineEmits(["submit"]);
+import { Form, Field, ErrorMessage } from "vee-validate";
+import * as yup from "yup";
 const supabase = useSupabaseClient();
+const isLoading = ref(false);
 
-const { handleSubmit, setFieldValue } = useForm({
-  validationSchema: categorySchema,
+const props = defineProps<{
+  createError?: string | null;
+}>();
+// Validation schema
+const schema = yup.object({
+  name: yup.string().required("Name harus diisi"),
+  description: yup.string().nullable(),
+  icon: yup.mixed().nullable(),
+  photo: yup.mixed().nullable(),
 });
 
-// File upload handler
-async function uploadFile(event: Event, field: string) {
-  // field to specify folder in supabase storage
-  const target = event.target as HTMLInputElement;
-  if (!target.files?.length) return;
+const emit = defineEmits<{
+  (
+    e: "submit",
+    data: {
+      name: string;
+      description?: string | null;
+      icon_path?: string | null;
+      photo_path?: string | null;
+    }
+  ): void;
+}>();
 
-  const file = target.files[0];
-  const filePath = `${field}/${Date.now()}-${file.name}`;
-  // date to make sure uniqueness
-
+// helper for uploading
+async function uploadFile(file: File, folder: string) {
+  console.log("Upload file called! =>", folder);
+  const filePath = `${folder}/${Date.now()}-${file.name}`;
   const { error } = await supabase.storage
     .from("uploads")
     .upload(filePath, file);
-  if (error) {
-    console.error(error);
-    return;
-  }
-  console.log(filePath);
-
-  // Save just the path to the form value
-  setFieldValue(field, filePath);
+  if (error) throw error;
+  return filePath;
 }
 
-// function onSubmit(values: any) {
-//   console.log("handler called!");
-//   console.log(JSON.stringify(values, null, 2));
-//   emit("submit", values);
-// }
+// handler passed to <Form>
+async function handleSubmit(values: any) {
+  console.log(values);
+  let icon_path = null;
+  let photo_path = null;
 
-const onSubmit = handleSubmit(async (values) => {
-  console.log("handler called!");
-  console.log(JSON.stringify(values, null, 2));
-  const { error } = await supabase.from("categories").insert({
+  if (values.icon) {
+    icon_path = await uploadFile(values.icon, "icons");
+  }
+  if (values.photo) {
+    photo_path = await uploadFile(values.photo, "photos");
+  }
+  console.log(values);
+
+  emit("submit", {
     name: values.name,
     description: values.description,
-    icon_path: values.icon_path,
-    name_path: values.name_path,
+    icon_path,
+    photo_path,
   });
+}
 
-  if (error) {
-    console.error("❌ Insert failed:", error.message);
+// For preview the icon and photo
+// Previews
+const iconPreview = ref<string | null>(null);
+const photoPreview = ref<string | null>(null);
+
+function onFileChange(
+  e: Event,
+  field: "icon" | "photo",
+  setFieldValue: Function
+) {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  // update vee-validate form state
+  setFieldValue(field, file);
+
+  // revoke + update preview
+  if (field === "icon") {
+    if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
+    iconPreview.value = URL.createObjectURL(file);
   } else {
-    console.log("✅ Category saved");
+    if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
+    photoPreview.value = URL.createObjectURL(file);
   }
+}
+
+// cleanup
+onBeforeUnmount(() => {
+  if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
+  if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
 });
-
-
 </script>
 
 <template>
   <Form
-    @submit="onSubmit"
-    class="space-y-4 mx-auto"
-    :validationSchema="categorySchema"
-    keep-values
+    :validation-schema="schema"
+    @submit="handleSubmit"
+    v-slot="{ setFieldValue }"
   >
-    <!-- Name -->
-    <div>
-      <label class="block text-sm font-medium mb-1">Name</label>
-      <Field
-        name="name"
-        type="text"
-        placeholder="Enter category name"
-        class="w-full border rounded p-2"
-      />
+    <!-- Nama kategori -->
+    <div class="mb-4">
+      <label class="block font-medium" for="name">Name</label>
+      <Field name="name" id="name" class="border rounded p-2 w-full" />
       <ErrorMessage name="name" class="text-red-500 text-sm" />
     </div>
 
-    <!-- Icon Upload -->
-    <div>
-      <label class="block text-sm font-medium mb-1">Icon (optional)</label>
-      <input
-        type="file"
-        accept="image/*"
-        class="w-full"
-        @change="uploadFile($event, 'icons')"
-        name="icon_path"
-      />
-      <ErrorMessage name="icon_path" class="text-red-500 text-sm" />
-    </div>
-
-    <!-- Description -->
-    <div>
-      <label class="block text-sm font-medium mb-1">Description</label>
+    <!-- Deskripsi -->
+    <div class="mb-4">
+      <label for="description" class="block font-medium">Description</label>
       <Field
-        name="description"
         as="textarea"
-        rows="3"
-        placeholder="Optional description"
-        class="w-full border rounded p-2"
+        name="description"
+        id="description"
+        class="border rounded p-2 w-full"
       />
       <ErrorMessage name="description" class="text-red-500 text-sm" />
     </div>
 
-    <!-- Photo Upload -->
-    <div>
-      <label class="block text-sm font-medium mb-1">Photo (optional)</label>
+    <!-- Icon -->
+    <div class="mb-4">
+      <label for="icon" class="block font-medium">Icon</label>
       <input
-        name="photo_path"
         type="file"
         accept="image/*"
-        class="w-full"
-        @change="uploadFile($event, 'photos')"
+        name="icon"
+        id="icon"
+        @change="(e) => onFileChange(e, 'icon', setFieldValue)"
       />
-      <ErrorMessage name="photo_path" class="text-red-500 text-sm" />
+      <div v-if="iconPreview" class="mt-2">
+        <img
+          :src="iconPreview"
+          alt="Icon Preview"
+          class="w-8 h-8 object-cover rounded border"
+        />
+      </div>
     </div>
 
-    <!-- Submit -->
-    <button
+    <!-- Photo -->
+    <div class="mb-4">
+      <label for="photo" class="block font-medium">Photo</label>
+      <input
+        type="file"
+        accept="image/*"
+        name="photo"
+        id="photo"
+        @change="(e) => onFileChange(e, 'photo', setFieldValue)"
+      />
+      <div v-if="photoPreview" class="mt-2">
+        <img
+          :src="photoPreview"
+          alt="Photo Preview"
+          class="w-32 h-20 object-cover rounded border"
+        />
+      </div>
+    </div>
+
+    <ButtonDefault
+      name="buat kategori"
       type="submit"
-      class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      class="text-white bg-gradient-to-r from-orange-400 to-orange-500 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 focus:ring-4 focus:outline-none focus:ring-orange-300 d shadow-lg shadow-orange-400/50 mb-3 sm:mb-6"
     >
-      Save Category
-    </button>
+      Buat Kategori
+    </ButtonDefault>
   </Form>
+  <div class="error-box text-red-600" v-if="props.createError">
+    {{ props.createError }}
+  </div>
 </template>

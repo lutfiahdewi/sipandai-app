@@ -6,22 +6,31 @@ defineProps<{
   name: string;
   table: string;
 }>();
+const emit = defineEmits<{
+  (e: "refresh"): void;
+}>();
 const modal = ref<InstanceType<typeof ModalBase> | null>(null);
-
 const supabase = useSupabaseClient();
-async function deleteData(table: string, id: string) {
+const isLoading = ref(false);
+const errorMessageDelete = ref("");
+
+async function deleteData(table: string, id: string): Promise<boolean> {
+  isLoading.value = true;
   const { data, error } = await supabase
     .from(table)
     .delete()
     .eq("id", id)
     .select();
   if (error) {
-    alert("Gagal");
-    throw console.log(error);
-    return;
+    isLoading.value = false;
+    errorMessageDelete.value = 'Gagal menghapus. Detail error: '+error.details;
+    return false;
   }
-  reloadNuxtApp();
-
+  isLoading.value = false;
+  emit("refresh"); // ✅ tell parent to reload
+  modal.value?.close(); // ✅ close modal
+  return true;
+  // reloadNuxtApp();
 }
 </script>
 
@@ -37,17 +46,33 @@ async function deleteData(table: string, id: string) {
       <span>Hapus Kategori</span>
     </template>
     <template #body>
-        <h5 class="text-center">
-          Anda yakin akan menghapus kategori {{ name }} ?
-        </h5>
+      <h5 class="text-center">
+        Anda yakin akan menghapus kategori {{ name }} ?
+      </h5>
+      <div class="error-box text-red-600" v-if="errorMessageDelete">
+        {{ errorMessageDelete }}
+      </div>
     </template>
     <template #footer>
       <div class="flex justify-center gap-x-3 text-sm sm:text-lg">
         <button
           @click="deleteData(table, id)"
-          class="p-1 sm:p-2 min-w-18 sm:min-w-24 bg-red-500 hover:bg-red-600 focus:ring-4 focus:outline-none focus:ring-red-400 rounded-lg"
+          :disabled="isLoading"
+          class="p-1 sm:p-2 min-w-18 sm:min-w-24 focus:ring-4 focus:outline-none focus:ring-red-400 rounded-lg"
+          :class="
+            isLoading
+              ? 'bg-red-700 text-slate-400'
+              : ' bg-red-500 hover:bg-red-600 '
+          "
         >
-          Ya
+          <div
+            v-if="isLoading"
+            class="px-2 flex gap-x-2 justify-center items-center"
+          >
+            <IconLoading class="inline w-6 h-6" />
+            <span>Loading...</span>
+          </div>
+          <span v-else>Hapus</span>
         </button>
         <button
           @click="modal?.close"
