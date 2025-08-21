@@ -12,7 +12,6 @@ definePageMeta({
 });
 
 const tableName = "categories";
-// const newCategory = ref<InstanceType<typeof ModalBase> | null>(null);
 const columns = [
   {
     label: "Name",
@@ -92,12 +91,13 @@ async function saveCategory(values: any) {
 }
 
 // delete data : done in button-delete component, only pass the name and id to component. Some function or method pass by emit
-//update data
+//update data :
 // refresh data
 const refreshData = async () => {
   loadingData.value = true;
   categories.value = [];
   await getData(); // always refresh
+  alertSuccess.value?.call(5);
 };
 //data tabel ditarik saat halaman sudah dirender
 onMounted(getData);
@@ -119,6 +119,7 @@ const alertError = ref<InstanceType<typeof AlertError> | null>(null);
         @submit="saveCategory"
         :create-error="errorMessageCreate"
         @resetError="errorMessageCreate = ''"
+        ref="createCategory"
       />
       <!-- Button Refresh -->
       <ButtonDefault
@@ -150,14 +151,21 @@ const alertError = ref<InstanceType<typeof AlertError> | null>(null);
             v-if="props.column.field == 'id'"
             class="flex gap-x-1.5 sm:gap-x-3"
           >
-            <button-delete
+            <CategoryDelete
               :id="props.row.id"
               :name="props.row.name"
               :table="tableName"
               @refresh="refreshData"
               @show-error="alertError?.call(5)"
               @show-success="alertSuccess?.call(5)"
-            /><button-edit />
+            />
+            <CategoryEdit
+              :id="props.row.id"
+              :data="ref(props.row)"
+              @refresh="refreshData"
+              @show-error="alertError?.call(5)"
+              @show-success="alertSuccess?.call(5)"
+            />
           </span>
           <span v-else-if="props.column.field == 'description'">
             <p class="line-clamp-3">{{ props.row.description }}</p>

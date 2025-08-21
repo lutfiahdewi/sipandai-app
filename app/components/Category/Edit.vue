@@ -2,32 +2,21 @@
 import { Form, Field, ErrorMessage } from "vee-validate";
 import { vOnClickOutside } from "@vueuse/components";
 import type { ModalBase } from "#components";
-const newCategory = ref<InstanceType<typeof ModalBase> | null>(null);
-const close = () => {
-  newCategory.value?.close;
-};
+import type { Database } from "~/types/supabase";
+const editCategory = ref<InstanceType<typeof ModalBase> | null>(null);
 const supabase = useSupabaseClient();
 const isLoading = ref(false);
 // props : catch variable from parent
+type category = Ref<Database["public"]["Tables"]["categories"]["Row"]>
 const props = defineProps<{
-  createError?: string | null;
+  id: string;
+  data: Ref<Database["public"]["Tables"]["categories"]["Row"]>;
 }>();
-// emit : pass event to parent to listen
 const emit = defineEmits<{
-  (
-    e: "submit",
-    data: {
-      name: string;
-      description?: string | null;
-      icon_path?: string | null;
-      photo_path?: string | null;
-    }
-  ): void;
-  (e: "reset-error"): void;
+  (e: "refresh"): void;
+  (e: "show-error"): void;
+  (e: "show-success"): void;
 }>();
-defineExpose({
-  close,
-});
 
 // helper for uploading imaegs
 async function uploadFile(file: File, folder: string) {
@@ -41,25 +30,40 @@ async function uploadFile(file: File, folder: string) {
 }
 
 // handler passed to <Form>
+const errorMessage = ref("");
 async function handleSubmit(values: any) {
-  console.log(values);
-  let icon_path = null;
-  let photo_path = null;
-
+  isLoading.value =true;
+  errorMessage.value = "";
+  // console.log(props.data.value)
+  // console.log(values)
+  const currentData = props.data.value;
+  let icon_path = currentData.icon_path;
+  let photo_path = currentData.photo_path;
   if (values.icon) {
     icon_path = await uploadFile(values.icon, "icons");
   }
   if (values.photo) {
     photo_path = await uploadFile(values.photo, "photos");
   }
-  console.log(values);
-
-  emit("submit", {
-    name: values.name,
-    description: values.description,
-    icon_path,
-    photo_path,
-  });
+  const { error } = await supabase
+    .from("categories")
+    .update({
+      name: values.name,
+      description: values.description,
+      icon_path,
+      photo_path,
+    } as never)//idk why ts should take it as never
+    .eq("id", currentData.id);
+  if (error) {
+    emit("show-error");
+    errorMessage.value =
+      "Gagal mengubah data kategori. Pesan error: " + error.message;
+  } else {
+    emit("show-success");
+    emit("refresh");
+    editCategory.value?.close();
+  }
+  isLoading.value = false;
 }
 
 // For preview the icon and photo
@@ -97,18 +101,19 @@ onBeforeUnmount(() => {
 
 <template>
   <ModalBase
-    ref="newCategory"
+    ref="editCategory"
     class-modal="w-full sm:max-w-[580px] lg:max-w-[980px]"
-    class-header=" text-slate-800 font-semibold text-base sm:text-xl"
+    class-header=" bg-blue-400 text-slate-800 font-semibold text-base sm:text-xl"
     class-body=" max-h-[65vh] sm:max-h-[75vh] rounded-b-lg "
     class-footer=" hidden "
   >
     <template #header>
-      <span>Tambah kategori baru</span>
+      <span>Ubah data kategori</span>
     </template>
     <template #body>
-      <div class="create-form" v-on-click-outside="() => $emit('reset-error')">
+      <div class="create-form" v-on-click-outside="() => (errorMessage = '')">
         <Form
+          :initial-values="data"
           :validation-schema="categorySchema"
           @submit="handleSubmit"
           v-slot="{
@@ -153,12 +158,21 @@ onBeforeUnmount(() => {
               :class="DEFAULT_INPUT_FILE"
               @change="(e) => onFileChange(e, 'icon', setFieldValue)"
             />
-            <div v-if="iconPreview" class="mt-2">
-              <img
-                :src="iconPreview"
-                alt="Icon Preview"
-                class="w-12 h-12 object-cover rounded border"
-              />
+            <div class="flex gap-x-3 mt-2">
+              <div v-if="values.icon_path">
+                <img
+                  :src="useGetImageUrl(values.icon_path, supabase)"
+                  class="h-12 w-12 object-contain"
+                />
+                <span class="text-center">Icon Tersimpan</span>
+              </div>
+              <div v-if="iconPreview" class="">
+                <img
+                  :src="iconPreview"
+                  alt="Icon Preview"
+                  class="w-12 h-12 object-cover rounded border"
+                />
+              </div>
             </div>
           </div>
 
@@ -173,19 +187,28 @@ onBeforeUnmount(() => {
               :class="DEFAULT_INPUT_FILE"
               @change="(e) => onFileChange(e, 'photo', setFieldValue)"
             />
-            <div v-if="photoPreview" class="mt-2">
-              <img
-                :src="photoPreview"
-                alt="Photo Preview"
-                class="w-32 h-20 object-cover rounded border"
-              />
+            <div class="flex gap-x-3 mt-2">
+              <div v-if="values.photo_path">
+                <img
+                  :src="useGetImageUrl(values.photo_path, supabase)"
+                  class="w-32 h-20 object-contain"
+                />
+                <span class="text-center">Foto Tersimpan</span>
+              </div>
+              <div v-if="photoPreview" class="">
+                <img
+                  :src="photoPreview"
+                  alt="Photo Preview"
+                  class="w-32 h-20 object-cover rounded border"
+                />
+              </div>
             </div>
           </div>
           <div class="flex justify-center gap-x-3 text-sm sm:text-lg">
             <button
-              :disabled="isLoading"
+              :disabled="isLoading || meta.dirty !== true"
               type="submit"
-              class="p-1.5 sm:p-3 min-w-18 sm:min-w-24 text-slate-50 font-medium bg-gradient-to-r from-orange-400 to-orange-500 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-orange-400 rounded-lg disabled:opacity-50"
+              class="p-1.5 sm:p-3 min-w-18 sm:min-w-24 text-slate-50 font-medium bg-gradient-to-r from-blue-400 to-blue-500 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-400 rounded-lg disabled:opacity-50"
             >
               <div
                 v-if="isLoading"
@@ -194,12 +217,12 @@ onBeforeUnmount(() => {
                 <IconLoading class="inline w-6 h-6 fill-slate-300" />
                 <span>Loading...</span>
               </div>
-              <span v-else>Buat Kategori</span>
+              <span v-else>Simpan Perubahan</span>
             </button>
             <button
               @click="
-                newCategory?.close();
-                $emit('reset-error');
+                editCategory?.close();
+                errorMessage = '';
               "
               type="reset"
               class="p-1 sm:p-2 min-w-18 sm:min-w-24 bg-slate-300 font-normal rounded-lg hover:bg-slate-400 focus:ring-4 focus:outline-none focus:ring-slate-300"
@@ -207,26 +230,16 @@ onBeforeUnmount(() => {
               Batal
             </button>
           </div>
-          <!-- <ButtonDefault
-      name="buat kategori"
-      type="submit"
-      class="text-white bg-gradient-to-r from-orange-400 to-orange-500 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 focus:ring-4 focus:outline-none focus:ring-orange-300 d shadow-lg shadow-orange-400/50 mb-3 sm:mb-6"
-    >
-      Buat Kategori
-    </ButtonDefault> -->
         </Form>
-        <div class="error-box text-red-600 py-3" v-if="props.createError">
-          {{ props.createError }}
+        <div class="error-box text-red-600 py-3" v-if="errorMessage">
+          {{ errorMessage }}
         </div>
       </div>
     </template>
   </ModalBase>
-  <ButtonDefault
-    name="Tambah Kategori"
-    class="text-slate-50 bg-gradient-to-r from-orange-400 to-orange-500 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 focus:ring-4 focus:outline-none focus:ring-orange-300 d shadow-lg shadow-orange-400/50 mb-3 sm:mb-6"
-    @click="newCategory?.open()"
-  >
-    <IconAdd class="w-5 sm:w-6 lg:w-7 h-auto font-bold me-2" />
-    <span>Tambah kategori</span>
-  </ButtonDefault>
+  <button @click="editCategory?.open()">
+    <IconEdit
+      class="w-7 h-7 sm:w-8 sm:h-8 p-1 rounded-md bg-blue-500 text-white hover:bg-blue-600"
+    />
+  </button>
 </template>

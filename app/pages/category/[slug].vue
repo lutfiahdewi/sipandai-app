@@ -18,8 +18,8 @@ const documents: Ref<
 > = ref([]);
 const pending = ref(true);
 
+const categorySlug = route.params.slug;
 onMounted(async () => {
-  const categorySlug = route.params.slug;
   const queryAll = supabase
     .from("categories")
     .select(
@@ -32,14 +32,12 @@ onMounted(async () => {
     .eq("slug", categorySlug)
     .single();
 
-  type QueryAll = QueryData<typeof queryAll>;
+  type queryBulk = QueryData<typeof queryAll>;
   const { data, error } = await queryAll;
   if (error) throw error;
-  const result: QueryAll = data;
-  console.log(result);
-
+  const result: queryBulk = data;
   category.value = result;
-  subcategories.value = result.subcategories1;
+  subcategories.value = result.subcategories1 as never;
   documents.value = result.documents;
 
   pending.value = false;
@@ -92,6 +90,7 @@ useHead({
           :id="cat.id"
           :name="cat.name"
           :icon-path="useGetImageUrl(cat.icon_path, supabase)"
+          :slug="'subcategory1/'+cat.slug"
         />
       </SectionList>
       <!-- Dokumen dibawah kategori ini -->

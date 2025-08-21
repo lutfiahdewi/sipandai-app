@@ -40,9 +40,9 @@ defineExpose({
     <!-- Modal component-->
     <Transition name="modal">
       <div v-if="showModal" class="modal-mask">
-        <div class="modal-container rounded-lg w-[600px] border bg-slate-200 " :class="classModal" v-on-click-outside="close">
+        <div :class="'modal-container rounded-lg w-[600px] border bg-slate-200 '+classModal" v-on-click-outside="close">
           <!-- Header section -->
-          <div class="modal-header bg-orange-400 border-b rounded-t-lg px-5 py-2 sm:py-3" :class="classHeader">
+          <div  :class="'modal-header bg-orange-400 border-b rounded-t-lg px-5 py-2 sm:py-3 ' + classHeader">
             <div class="flex justify-between">
               <slot name="header">
                 <h6 class="font-bold text-gray-800">Default Header</h6>
@@ -51,7 +51,7 @@ defineExpose({
             </div>
           </div>
           <!-- Body section -->
-          <div class="modal-body bg-slate-50 px-5 py-3 sm:py-6 overflow-y-scroll max-h-64" :class="classBody">
+          <div :class="'modal-body bg-slate-50 px-5 py-3 sm:py-6 overflow-y-scroll max-h-64 ' + classBody">
             <slot name="body">
               Lorem ipsum dolor sit amet consectetur adipisicing elit. Possimus obcaecati ex numquam incidunt labore iusto nam blanditiis et fuga ducimus natus dolorum porro commodi nostrum impedit nisi a dolores eius sint inventore,
               recusandae, consectetur tenetur? Laudantium nisi dolore a aspernatur tempora. Animi optio numquam cumque iure illum culpa ab mollitia expedita laborum iusto reiciendis omnis, accusamus, natus, quidem eligendi quae fuga ex.
@@ -70,7 +70,7 @@ defineExpose({
             </slot>
           </div>
           <!-- Footer section -->
-          <div class="modal-footer px-5 py-2 sm:py-3 border-t rounded-b-lg " :class="classFooter">
+          <div :class="'modal-footer px-5 py-2 sm:py-3 border-t rounded-b-lg ' + classFooter">
             <slot name="footer">
               <div class="flex justify-end items-center gap-x-3">
                 <button-default name="close button" @click="close()" class="hover:bg-slate-300 rounded-lg text-base">Close</button-default>
