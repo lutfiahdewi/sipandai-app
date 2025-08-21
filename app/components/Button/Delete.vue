@@ -8,6 +8,8 @@ defineProps<{
 }>();
 const emit = defineEmits<{
   (e: "refresh"): void;
+  (e: "show-error"): void;
+  (e: "show-success"): void;
 }>();
 const modal = ref<InstanceType<typeof ModalBase> | null>(null);
 const supabase = useSupabaseClient();
@@ -22,10 +24,13 @@ async function deleteData(table: string, id: string): Promise<boolean> {
     .eq("id", id)
     .select();
   if (error) {
+    emit('show-error')
     isLoading.value = false;
-    errorMessageDelete.value = 'Gagal menghapus. Detail error: '+error.details;
+    errorMessageDelete.value =
+      "Gagal menghapus. Detail error: " + error.details;
     return false;
   }
+  emit('show-success')
   isLoading.value = false;
   emit("refresh"); // ✅ tell parent to reload
   modal.value?.close(); // ✅ close modal

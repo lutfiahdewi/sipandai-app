@@ -1,8 +1,8 @@
 import * as yup from 'yup'
 
 export const categorySchema = yup.object({
-  name: yup.string().required('Name is required'),
-  icon_path: yup.string().nullable(),
+  name: yup.string().required("Nama harus diisi"),
   description: yup.string().nullable(),
-  photo_path: yup.string().nullable(),
-})
+  icon: yup.mixed().nullable(),
+  photo: yup.mixed().nullable(),
+});

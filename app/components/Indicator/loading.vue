@@ -1,4 +1,8 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+defineProps<{
+  class?: string;
+}>();
+</script>
 <template>
   <div
     class="flex items-center justify-center w-full h-[75vh] rounded-lg bg-transparent"
@@ -7,6 +11,7 @@
       <svg
         aria-hidden="true"
         class="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
+        :class="class"
         viewBox="0 0 100 101"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"

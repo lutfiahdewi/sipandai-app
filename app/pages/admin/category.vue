@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { ButtonDefault, ModalBase } from "#components";
+import {
+  AlertError,
+  AlertSuccess,
+  ButtonDefault,
+  CategoryCreate,
+} from "#components";
 import type { Database } from "~/types/supabase";
 
 definePageMeta({
@@ -7,7 +12,7 @@ definePageMeta({
 });
 
 const tableName = "categories";
-const newCategory = ref<InstanceType<typeof ModalBase> | null>(null);
+// const newCategory = ref<InstanceType<typeof ModalBase> | null>(null);
 const columns = [
   {
     label: "Name",
@@ -71,73 +76,69 @@ const getData = async () => {
 
 // insert data ke tabel categories
 const errorMessageCreate = ref("");
+const createCategory = ref<InstanceType<typeof CategoryCreate> | null>(null);
 async function saveCategory(values: any) {
   if (errorMessageCreate.value.length != 0) errorMessageCreate.value = "";
   const { error } = await supabase.from("categories").insert(values);
   if (error) {
-    errorMessageCreate.value = "Gagal membuat kategori. Pesan error: "+error.message;
+    alertError.value?.call(5);
+    errorMessageCreate.value =
+      "Gagal membuat kategori. Pesan error: " + error.message;
   } else {
+    alertSuccess.value?.call(5);
     refreshData();
-    newCategory.value?.close();
+    createCategory.value?.close();
   }
 }
 
-// delete data : done in button-delete component
-
+// delete data : done in button-delete component, only pass the name and id to component. Some function or method pass by emit
 //update data
-
 // refresh data
 const refreshData = async () => {
   loadingData.value = true;
   categories.value = [];
   await getData(); // always refresh
 };
+//data tabel ditarik saat halaman sudah dirender
 onMounted(getData);
+
+//alert
+const alertSuccess = ref<InstanceType<typeof AlertSuccess> | null>(null);
+const alertError = ref<InstanceType<typeof AlertError> | null>(null);
 </script>
 <template>
   <div class="slot">
     <h1 class="mb-3 sm:mb-6 text-lg sm:text-2xl lg:text-4xl font-semibold">
       Kelola data kategori
     </h1>
-    <ModalBase
-      ref="newCategory"
-      class-modal="w-full sm:max-w-[580px] lg:max-w-[980px]"
-      class-header=" text-slate-800 font-semibold text-base sm:text-xl"
-      class-body=" max-h-[60vh] sm:max-h-[65vh] "
-      class-footer="  "
-    >
-      <template #header>
-        <span>Tambah kategori baru</span>
-      </template>
-      <template #body>
-        <FormCategory
-          @submit="saveCategory"
-          :create-error="errorMessageCreate"
-        />
-      </template>
-      <template #footer></template>
-    </ModalBase>
-    <!-- grup tombol -->
+
+    <!-- button group -->
     <div class="flex">
-      <ButtonDefault
-        name="Tambah Kategori"
-        class="text-white bg-gradient-to-r from-orange-400 to-orange-500 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 focus:ring-4 focus:outline-none focus:ring-orange-300 d shadow-lg shadow-orange-400/50 mb-3 sm:mb-6"
-        @click="newCategory?.open()"
-      >
-        <IconAdd class="w-5 sm:w-6 lg:w-7 h-auto font-bold me-2" />
-        <span>Tambah kategori</span>
-      </ButtonDefault>
+      <!-- Button Tambah kategori -->
+      <CategoryCreate
+        @submit="saveCategory"
+        :create-error="errorMessageCreate"
+        @resetError="errorMessageCreate = ''"
+      />
+      <!-- Button Refresh -->
       <ButtonDefault
         @click="refreshData"
         :disabled="loadingData"
         name="refresh data"
-        class="text-white bg-blue-500 rounded disabled:opacity-50 focus:ring-4 focus:outline-none focus:ring-blue-300 d shadow-lg shadow-blue-400/50 mb-3 sm:mb-6"
-        ><Icon name="hugeicons:refresh" size="24 text-bold" class="me-2" />
+        class="text-white bg-green-500 rounded disabled:opacity-50 focus:ring-4 focus:outline-none focus:ring-green-300 d shadow-lg shadow-green-400/50 mb-3 sm:mb-6"
+        ><IconRefresh
+          class="w-5 sm:w-6 lg:w-7 me-2"
+          :class="loadingData ? ' hidden ' : ' inline '"
+        /><IconLoading
+          class="w-5 sm:w-6 lg:w-7 fill-slate-50 me-2"
+          :class="!loadingData ? ' hidden ' : ' inline '"
+        />
         <span>
           {{ loadingData ? "Refreshing..." : "Refresh" }}
         </span>
       </ButtonDefault>
     </div>
+    <!-- Tabel data -->
     <div class="data-content">
       <vue-good-table
         :columns="columns"
@@ -154,6 +155,8 @@ onMounted(getData);
               :name="props.row.name"
               :table="tableName"
               @refresh="refreshData"
+              @show-error="alertError?.call(5)"
+              @show-success="alertSuccess?.call(5)"
             /><button-edit />
           </span>
           <span v-else-if="props.column.field == 'description'">
@@ -166,4 +169,15 @@ onMounted(getData);
       </vue-good-table>
     </div>
   </div>
+  <!-- Alert -->
+  <AlertSuccess ref="alertSuccess">
+    <template #content>
+      <p class="font-medium">Data berhasil diperbarui!</p>
+    </template>
+  </AlertSuccess>
+  <AlertError ref="alertError">
+    <template #content>
+      <p class="font-medium">Data gagal diperbarui!</p>
+    </template>
+  </AlertError>
 </template>
