@@ -34,10 +34,9 @@ async function login(values: any) {
     errorMessageLogin.value = error.message;
   } else {
     // User session is now stored in Supabase client
-    console.log("Logged in as:", data.user);
-    navigateTo("/admin/category"); // or your admin page
+    // console.log("Logged in as:", data.user);
+    await navigateTo("/admin/category"); // or your admin page
   }
-
   isLoading.value = false;
 }
 </script>

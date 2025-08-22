@@ -11,6 +11,7 @@ type category = Ref<Database["public"]["Tables"]["categories"]["Row"]>
 const props = defineProps<{
   id: string;
   data: Ref<Database["public"]["Tables"]["categories"]["Row"]>;
+  table: string;
 }>();
 const emit = defineEmits<{
   (e: "refresh"): void;
@@ -46,7 +47,7 @@ async function handleSubmit(values: any) {
     photo_path = await uploadFile(values.photo, "photos");
   }
   const { error } = await supabase
-    .from("categories")
+    .from(props.table)
     .update({
       name: values.name,
       description: values.description,

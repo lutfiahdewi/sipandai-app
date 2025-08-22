@@ -2,9 +2,9 @@
 import { Form, Field, ErrorMessage } from "vee-validate";
 import { vOnClickOutside } from "@vueuse/components";
 import type { ModalBase } from "#components";
-const newCategory = ref<InstanceType<typeof ModalBase> | null>(null);
+const modal = ref<InstanceType<typeof ModalBase> | null>(null);
 const close = () => {
-  newCategory.value?.close;
+  modal.value?.close();
 };
 const supabase = useSupabaseClient();
 const isLoading = ref(false);
@@ -29,30 +29,19 @@ defineExpose({
   close,
 });
 
-// helper for uploading imaegs
-async function uploadFile(file: File, folder: string) {
-  console.log("Upload file called! =>", folder);
-  const filePath = `${folder}/${Date.now()}-${file.name}`;
-  const { error } = await supabase.storage
-    .from("uploads")
-    .upload(filePath, file);
-  if (error) throw error;
-  return filePath;
-}
 
 // handler passed to <Form>
 async function handleSubmit(values: any) {
-  console.log(values);
+  isLoading.value = true;
   let icon_path = null;
   let photo_path = null;
 
   if (values.icon) {
-    icon_path = await uploadFile(values.icon, "icons");
+    icon_path = await useUploadFile(values.icon, "icons", supabase);
   }
   if (values.photo) {
-    photo_path = await uploadFile(values.photo, "photos");
+    photo_path = await useUploadFile(values.photo, "photos", supabase);
   }
-  console.log(values);
 
   emit("submit", {
     name: values.name,
@@ -60,6 +49,7 @@ async function handleSubmit(values: any) {
     icon_path,
     photo_path,
   });
+  isLoading.value = false;
 }
 
 // For preview the icon and photo
@@ -97,7 +87,7 @@ onBeforeUnmount(() => {
 
 <template>
   <ModalBase
-    ref="newCategory"
+    ref="modal"
     class-modal="w-full sm:max-w-[580px] lg:max-w-[980px]"
     class-header=" text-slate-800 font-semibold text-base sm:text-xl"
     class-body=" max-h-[65vh] sm:max-h-[75vh] rounded-b-lg "
@@ -198,7 +188,7 @@ onBeforeUnmount(() => {
             </button>
             <button
               @click="
-                newCategory?.close();
+                modal?.close();
                 $emit('reset-error');
               "
               type="reset"
@@ -207,13 +197,6 @@ onBeforeUnmount(() => {
               Batal
             </button>
           </div>
-          <!-- <ButtonDefault
-      name="buat kategori"
-      type="submit"
-      class="text-white bg-gradient-to-r from-orange-400 to-orange-500 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 focus:ring-4 focus:outline-none focus:ring-orange-300 d shadow-lg shadow-orange-400/50 mb-3 sm:mb-6"
-    >
-      Buat Kategori
-    </ButtonDefault> -->
         </Form>
         <div class="error-box text-red-600 py-3" v-if="props.createError">
           {{ props.createError }}
@@ -224,7 +207,7 @@ onBeforeUnmount(() => {
   <ButtonDefault
     name="Tambah Kategori"
     class="text-slate-50 bg-gradient-to-r from-orange-400 to-orange-500 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 focus:ring-4 focus:outline-none focus:ring-orange-300 d shadow-lg shadow-orange-400/50 mb-3 sm:mb-6"
-    @click="newCategory?.open()"
+    @click="modal?.open()"
   >
     <IconAdd class="w-5 sm:w-6 lg:w-7 h-auto font-bold me-2" />
     <span>Tambah kategori</span>

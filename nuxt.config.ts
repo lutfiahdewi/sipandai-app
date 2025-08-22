@@ -5,7 +5,7 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  css: ['~/assets/css/main.css',],
+  css: ['~/assets/css/main.css',"vue-select/dist/vue-select.css",],
   plugins:[
     { src: '~/plugins/vue-good-table-next', ssr: false },
   ],

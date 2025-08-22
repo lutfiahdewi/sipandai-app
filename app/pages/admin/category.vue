@@ -91,7 +91,7 @@ async function saveCategory(values: any) {
 }
 
 // delete data : done in button-delete component, only pass the name and id to component. Some function or method pass by emit
-//update data :
+//update data : done in child component
 // refresh data
 const refreshData = async () => {
   loadingData.value = true;
@@ -161,7 +161,8 @@ const alertError = ref<InstanceType<typeof AlertError> | null>(null);
             />
             <CategoryEdit
               :id="props.row.id"
-              :data="ref(props.row)"
+              :data="props.row"
+              :table="tableName"
               @refresh="refreshData"
               @show-error="alertError?.call(5)"
               @show-success="alertSuccess?.call(5)"

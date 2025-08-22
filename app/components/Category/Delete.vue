@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ModalBase } from "#components";
+import type { Database } from "~/types/supabase";
 
 defineProps<{
   id: string;
@@ -16,26 +17,56 @@ const supabase = useSupabaseClient();
 const isLoading = ref(false);
 const errorMessageDelete = ref("");
 
+/**
+ * Deletinga data comes in two major step:
+ * 1. Deleting the main data in table. It's done first to check if't able to done. Then return the data, catch the path
+ * 2. Do the deletion if the path exist
+ */
 async function deleteData(table: string, id: string): Promise<boolean> {
   isLoading.value = true;
+  let dataDeleted:
+    | Database["public"]["Tables"]["categories"]["Row"]
+    | null
+    | undefined = null;
+  // 1. Detete data in table
   const { data, error } = await supabase
     .from(table)
     .delete()
     .eq("id", id)
     .select();
   if (error) {
-    emit('show-error')
+    emit("show-error");
     isLoading.value = false;
-    errorMessageDelete.value =
-      "Gagal menghapus. Detail error: " + error.details;
+    errorMessageDelete.value ="Gagal menghapus. Detail error: " + error.details;
     return false;
   }
-  emit('show-success')
+  dataDeleted = data[0];
+
+  // 2. DElete images data in storage
+  const pathsToDelete = [];
+  if (dataDeleted) {
+    if (dataDeleted?.icon_path) pathsToDelete.push(dataDeleted.icon_path);
+    if (dataDeleted?.photo_path) pathsToDelete.push(dataDeleted.photo_path);
+  }
+  if (pathsToDelete.length > 0) {
+    console.log(pathsToDelete)
+    const { error: storageError } = await supabase.storage
+      .from("uploads")
+      .remove(pathsToDelete);
+
+    if (storageError) {
+      emit("show-error");
+      isLoading.value = false;
+      errorMessageDelete.value = "Gagal menghapus. Pesan error: " + storageError.message;
+      return false;
+    }
+  }
+
+  emit("show-success");
   isLoading.value = false;
   emit("refresh"); // ✅ tell parent to reload
   modal.value?.close(); // ✅ close modal
   return true;
-  // reloadNuxtApp();
 }
 </script>
 
