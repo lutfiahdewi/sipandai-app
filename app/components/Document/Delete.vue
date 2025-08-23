@@ -78,11 +78,11 @@ async function deleteData(table: string, id: string): Promise<boolean> {
     class-footer="  "
   >
     <template #header>
-      <span>Hapus Kategori</span>
+      <span>Hapus Tautan Dokumen</span>
     </template>
     <template #body>
       <h5 class="text-center">
-        Anda yakin akan menghapus kategori {{ name }} ?
+        Anda yakin akan menghapus Tautan Dokumen {{ name }} ?
       </h5>
       <div class="error-box text-red-600" v-if="errorMessageDelete">
         {{ errorMessageDelete }}

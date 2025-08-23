@@ -17,6 +17,7 @@ const props = defineProps<{
 }>();
 defineEmits<{
   (e: "close"): void;
+  (e: "click-outside"): void;
 }>();
 import { vOnClickOutside } from '@vueuse/components'
 const showModal = ref(false);
@@ -40,7 +41,7 @@ defineExpose({
     <!-- Modal component-->
     <Transition name="modal">
       <div v-if="showModal" class="modal-mask">
-        <div :class="'modal-container rounded-lg w-[600px] border bg-slate-200 '+classModal" v-on-click-outside="close">
+        <div :class="'modal-container rounded-lg w-[600px] border bg-slate-200 '+classModal" v-on-click-outside="() => {close;$emit('click-outside')}">
           <!-- Header section -->
           <div  :class="'modal-header bg-orange-400 border-b rounded-t-lg px-5 py-2 sm:py-3 ' + classHeader">
             <div class="flex justify-between">

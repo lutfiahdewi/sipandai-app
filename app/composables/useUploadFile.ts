@@ -1,11 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-  export default async function uploadFile(file: File, folder: string, supabase: SupabaseClient) {
+export default async function uploadFile(path: Ref<string | null>, file: File, folder: string, supabase: SupabaseClient) {
   console.log("Upload file called! =>", folder);
   const filePath = `${folder}/${Date.now()}-${file.name}`;
   const { error } = await supabase.storage
     .from("uploads")
     .upload(filePath, file);
-  if (error) throw error;
-  return filePath;
+  if (error) {
+    console.log("Gagal upload gambar: ", filePath)
+    console.log(error)
+    return { path, error };
+  }
+  path.value = filePath;
+  return { path, error };
 }

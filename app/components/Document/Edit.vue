@@ -6,7 +6,8 @@ const modal = ref<InstanceType<typeof ModalBase> | null>(null);
 const supabase = useSupabaseClient();
 const isLoading = ref(false);
 // props : catch variable from parent
-defineProps<{
+const props = defineProps<{
+  id: string;
   table: string;
 }>();
 // emit : pass event to parent to listen
@@ -23,7 +24,12 @@ async function handleSubmit(values: any) {
   console.log(values);
 
   if (values.icon) {
-    const { error } =await useUploadFile(icon_path, values.icon, "icons", supabase);
+    const { error } = await useUploadFile(
+      icon_path,
+      values.icon,
+      "icons",
+      supabase
+    );
     if (error) {
       errorMessage.value = error.message;
       return;
@@ -108,11 +114,27 @@ async function triggerGetDataInside(
   );
 }
 
-// insert data to db
 const errorMessage = ref("");
+// get data from db
+async function getData(selector: string) {
+  if (errorMessage.value.length != 0) errorMessage.value = "";
+  const { data, error } = await supabase
+    .from(props.table)
+    .select(selector ?? "(*)")
+    .eq("id", props.id)
+    .single();
+  if (error) {
+    emit("show-error");
+    errorMessage.value =
+      "Gagal memuat data tautan dokumen. Pesan error: " + error.message;
+  }
+  console.log(data)
+}
+
+// insert data to db
 async function insertData(values: any) {
   if (errorMessage.value.length != 0) errorMessage.value = "";
-  const { error } = await supabase.from("documents").insert(values);
+  const { error } = await supabase.from(props.table).insert(values);
   if (error) {
     emit("show-error");
     errorMessage.value =
@@ -146,8 +168,19 @@ function onFileChange(
 
 // cleanup
 onMounted(() => {
-  useGetAllData("categories", categories, isLoading, supabase, defaultSelector);
+  // useGetAllData("categories", categories, isLoading, supabase, defaultSelector);
 });
+function getDetailData(){
+  getData(` name,url,description,icon_path,activity_date, categories(id, name,
+    subcategories1 (
+      id, name,
+      subcategories2 (
+        id, name,
+        subcategories3 (id, name)
+      )
+    )  
+  )`);
+}
 function reset() {
   errorMessage.value = "";
   subcategories1.value = [];
@@ -169,10 +202,10 @@ function reset() {
     @click-outside="reset()"
   >
     <template #header>
-      <span>Tambah tautan dokumen baru</span>
+      <span>Ubah tautan dokumen baru</span>
     </template>
     <template #body>
-      <div class="create-form" >
+      <div class="create-form">
         <Form
           :validation-schema="documentSchema"
           @submit="handleSubmit"
@@ -364,7 +397,7 @@ function reset() {
             <button
               :disabled="isLoading"
               type="submit"
-              class="p-1.5 sm:p-3 min-w-18 sm:min-w-24 text-slate-50 font-medium bg-gradient-to-r from-orange-400 to-orange-500 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-orange-400 rounded-lg disabled:opacity-50"
+              class="p-1.5 sm:p-3 min-w-18 sm:min-w-24 text-slate-50 font-medium bg-gradient-to-r from-blue-400 to-blue-500 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-400 rounded-lg disabled:opacity-50"
             >
               <div
                 v-if="isLoading"
@@ -373,7 +406,7 @@ function reset() {
                 <IconLoading class="inline w-6 h-6 fill-slate-300" />
                 <span>Loading...</span>
               </div>
-              <span v-else>Buat Tautan Dokumen</span>
+              <span v-else>Ubah Tautan Dokumen</span>
             </button>
             <button
               @click="
@@ -393,12 +426,9 @@ function reset() {
       </div>
     </template>
   </ModalBase>
-  <ButtonDefault
-    name="Tambah tautan dokumen"
-    class="text-slate-50 bg-gradient-to-r from-orange-400 to-orange-500 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 focus:ring-4 focus:outline-none focus:ring-orange-300 d shadow-lg shadow-orange-400/50 mb-3 sm:mb-6"
-    @click="modal?.open()"
-  >
-    <IconAdd class="w-5 sm:w-6 lg:w-7 h-auto font-bold me-2" />
-    <span>Tambah tautan dokumen</span>
-  </ButtonDefault>
+  <button @click="modal?.open(); getDetailData()">
+    <IconEdit
+      class="w-7 h-7 sm:w-8 sm:h-8 p-1 rounded-md bg-blue-500 text-white hover:bg-blue-600"
+    />
+  </button>
 </template>

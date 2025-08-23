@@ -10,13 +10,13 @@ const supabase = useSupabaseClient();
 
 const category: Ref<Database["public"]["Tables"]["categories"]["Row"] | null> =
   ref(null);
-const subcategories: Ref<
+const subcategories1: Ref<
   Database["public"]["Tables"]["subcategories1"]["Row"][]
 > = ref([]);
-const documents: Ref<
-  Database["public"]["Tables"]["documents"]["Row"][]
-> = ref([]);
-const pending = ref(true);
+const documents: Ref<Database["public"]["Tables"]["documents"]["Row"][]> = ref(
+  []
+);
+const isLoading = ref(true);
 
 const categorySlug = route.params.slug;
 onMounted(async () => {
@@ -25,8 +25,8 @@ onMounted(async () => {
     .select(
       `
     *,
-    subcategories1(*),
-    documents(*)
+    subcategories1(id, name, slug, icon_path),
+    documents(id, name, slug, icon_path, url)
   `
     )
     .eq("slug", categorySlug)
@@ -37,10 +37,10 @@ onMounted(async () => {
   if (error) throw error;
   const result: queryBulk = data;
   category.value = result;
-  subcategories.value = result.subcategories1 as never;
+  subcategories1.value = result.subcategories1;
   documents.value = result.documents;
 
-  pending.value = false;
+  isLoading.value = false;
 });
 useHead({
   title: category.value?.name,
@@ -50,7 +50,7 @@ useHead({
 <template>
   <div class="">
     <!-- Loading -->
-    <div v-if="pending"><IndicatorLoading /></div>
+    <div v-if="isLoading"><IndicatorLoading /></div>
 
     <div v-else>
       <!-- Kategori Deskripsi -->
@@ -85,17 +85,29 @@ useHead({
         title-class="text-orange-600"
       >
         <CardCategory
-          v-for="cat in subcategories"
+          v-for="cat in subcategories1"
           :key="cat.id"
           :id="cat.id"
           :name="cat.name"
           :icon-path="useGetImageUrl(cat.icon_path, supabase)"
-          :slug="'subcategory1/'+cat.slug"
+          :slug="'subcategory1/' + cat.slug"
         />
       </SectionList>
       <!-- Dokumen dibawah kategori ini -->
-      <SectionList v-if="documents" title="Dokumen dan lain-lain" section-class="border-t border-slate-600 ">
-        <!-- <CardLink/> -->
+      <SectionList
+        v-if="documents"
+        title="Dokumen dan lain-lain"
+        section-class="border-t border-slate-600 "
+      >
+        <CardLink
+          v-for="doc in documents"
+          :key="doc.id"
+          :id="doc.id"
+          :name="doc.name"
+          :desc="doc.description"
+          :icon-path="useGetImageUrl(doc.icon_path, supabase)"
+          :url="doc.url"
+        />
       </SectionList>
     </div>
   </div>

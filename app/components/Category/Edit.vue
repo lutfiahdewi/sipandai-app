@@ -7,10 +7,10 @@ const editCategory = ref<InstanceType<typeof ModalBase> | null>(null);
 const supabase = useSupabaseClient();
 const isLoading = ref(false);
 // props : catch variable from parent
-type category = Ref<Database["public"]["Tables"]["categories"]["Row"]>
+type category = Ref<Database["public"]["Tables"]["categories"]["Row"]>;
 const props = defineProps<{
   id: string;
-  data: Ref<Database["public"]["Tables"]["categories"]["Row"]>;
+  data: Database["public"]["Tables"]["categories"]["Row"];
   table: string;
 }>();
 const emit = defineEmits<{
@@ -18,41 +18,27 @@ const emit = defineEmits<{
   (e: "show-error"): void;
   (e: "show-success"): void;
 }>();
-
-// helper for uploading imaegs
-async function uploadFile(file: File, folder: string) {
-  console.log("Upload file called! =>", folder);
-  const filePath = `${folder}/${Date.now()}-${file.name}`;
-  const { error } = await supabase.storage
-    .from("uploads")
-    .upload(filePath, file);
-  if (error) throw error;
-  return filePath;
-}
-
+const currentData = toRaw(props.data);
 // handler passed to <Form>
 const errorMessage = ref("");
 async function handleSubmit(values: any) {
-  isLoading.value =true;
+  isLoading.value = true;
   errorMessage.value = "";
-  // console.log(props.data.value)
-  // console.log(values)
-  const currentData = props.data.value;
-  let icon_path = currentData.icon_path;
-  let photo_path = currentData.photo_path;
-  if (values.icon) {
-    icon_path = await uploadFile(values.icon, "icons");
-  }
-  if (values.photo) {
-    photo_path = await uploadFile(values.photo, "photos");
-  }
+  // console.log(values.name);
+  // console.log(currentData.name);
+  const icon_path: Ref<string | null> = ref(currentData.icon_path);
+  const photo_path: Ref<string | null> = ref(currentData.photo_path);
+  if (values.icon)
+    await useUploadFile(icon_path, values.icon, "icons", supabase);
+  if (values.photo)
+    await useUploadFile(photo_path, values.photo, "photos", supabase);
   const { error } = await supabase
     .from(props.table)
     .update({
       name: values.name,
       description: values.description,
-      icon_path,
-      photo_path,
+      icon_path : icon_path.value,
+    photo_path : photo_path.value,
     } as never)//idk why ts should take it as never
     .eq("id", currentData.id);
   if (error) {
@@ -84,13 +70,8 @@ function onFileChange(
   setFieldValue(field, file);
 
   // revoke + update preview
-  if (field === "icon") {
-    if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
-    iconPreview.value = URL.createObjectURL(file);
-  } else {
-    if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
-    photoPreview.value = URL.createObjectURL(file);
-  }
+  if (field === "icon") useUpdatePreview(iconPreview, file);
+  else useUpdatePreview(photoPreview, file);
 }
 
 // cleanup

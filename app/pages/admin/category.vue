@@ -89,9 +89,7 @@ async function saveCategory(values: any) {
     createCategory.value?.close();
   }
 }
-
-// delete data : done in button-delete component, only pass the name and id to component. Some function or method pass by emit
-//update data : done in child component
+// delete and update data : done in child component, only pass the name and id to component. Some function or method pass by emit
 // refresh data
 const refreshData = async () => {
   loadingData.value = true;

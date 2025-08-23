@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, Field, ErrorMessage } from "vee-validate";
-import { vOnClickOutside } from "@vueuse/components";
 import type { ModalBase } from "#components";
+
 const modal = ref<InstanceType<typeof ModalBase> | null>(null);
 const close = () => {
   modal.value?.close();
@@ -29,25 +29,20 @@ defineExpose({
   close,
 });
 
-
 // handler passed to <Form>
 async function handleSubmit(values: any) {
   isLoading.value = true;
-  let icon_path = null;
-  let photo_path = null;
-
-  if (values.icon) {
-    icon_path = await useUploadFile(values.icon, "icons", supabase);
-  }
-  if (values.photo) {
-    photo_path = await useUploadFile(values.photo, "photos", supabase);
-  }
-
+  const icon_path: Ref<string | null> = ref(null);
+  const photo_path: Ref<string | null> = ref(null);
+  if (values.icon)
+    await useUploadFile(icon_path, values.icon, "icons", supabase);
+  if (values.photo)
+    await useUploadFile(photo_path, values.photo, "photos", supabase);
   emit("submit", {
     name: values.name,
     description: values.description,
-    icon_path,
-    photo_path,
+    icon_path : icon_path.value,
+    photo_path : photo_path.value,
   });
   isLoading.value = false;
 }
@@ -69,13 +64,8 @@ function onFileChange(
   setFieldValue(field, file);
 
   // revoke + update preview
-  if (field === "icon") {
-    if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
-    iconPreview.value = URL.createObjectURL(file);
-  } else {
-    if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
-    photoPreview.value = URL.createObjectURL(file);
-  }
+  if (field === "icon") useUpdatePreview(iconPreview, file);
+  else useUpdatePreview(photoPreview, file);
 }
 
 // cleanup
@@ -92,12 +82,13 @@ onBeforeUnmount(() => {
     class-header=" text-slate-800 font-semibold text-base sm:text-xl"
     class-body=" max-h-[65vh] sm:max-h-[75vh] rounded-b-lg "
     class-footer=" hidden "
+    @click-outside="() => $emit('reset-error')"
   >
     <template #header>
       <span>Tambah kategori baru</span>
     </template>
     <template #body>
-      <div class="create-form" v-on-click-outside="() => $emit('reset-error')">
+      <div class="create-form">
         <Form
           :validation-schema="categorySchema"
           @submit="handleSubmit"
