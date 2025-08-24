@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Form, Field, ErrorMessage } from "vee-validate";
-import type { ModalBase } from "#components";
+import type { DocumentEdit, ModalBase } from "#components";
 import type { Database } from "~/types/supabase";
 const modal = ref<InstanceType<typeof ModalBase> | null>(null);
+
 const supabase = useSupabaseClient();
 const isLoading = ref(false);
 // props : catch variable from parent
@@ -15,33 +16,6 @@ const emit = defineEmits<{
   (e: "show-error"): void;
   (e: "show-success"): void;
 }>();
-
-// handler passed to <Form>
-async function handleSubmit(values: any) {
-  isLoading.value = true;
-  const icon_path: Ref<string | null> = ref(null);
-  console.log(values);
-
-  if (values.icon) {
-    const { error } =await useUploadFile(icon_path, values.icon, "icons", supabase);
-    if (error) {
-      errorMessage.value = error.message;
-      return;
-    }
-  }
-  insertData({
-    name: values.name,
-    url: values.url,
-    description: values.description,
-    icon_path: icon_path.value,
-    activity_date: values.activity_date,
-    category_id: values.category_id,
-    subcategory1_id: useIfStringEmpty(values.subcategory1_id) ?? undefined,
-    subcategory2_id: useIfStringEmpty(values.subcategory2_id) ?? undefined,
-    subcategory3_id: useIfStringEmpty(values.subcategory3_id) ?? undefined,
-  });
-  isLoading.value = false;
-}
 
 // getdata category
 const defaultSelector = "id, name,slug";
@@ -108,6 +82,37 @@ async function triggerGetDataInside(
   );
 }
 
+// handler passed to <Form>
+async function handleSubmit(values: any) {
+  isLoading.value = true;
+  const icon_path: Ref<string | null> = ref(null);
+  console.log(values);
+
+  if (values.icon) {
+    const { error } = await useUploadFile(
+      icon_path,
+      values.icon,
+      "icons",
+      supabase
+    );
+    if (error) {
+      errorMessage.value = error.message;
+      return;
+    }
+  }
+  insertData({
+    name: values.name,
+    url: values.url,
+    description: values.description,
+    icon_path: icon_path.value,
+    activity_date: values.activity_date,
+    category_id: values.category_id,
+    subcategory1_id: useIfStringEmpty(values.subcategory1_id) ?? undefined,
+    subcategory2_id: useIfStringEmpty(values.subcategory2_id) ?? undefined,
+    subcategory3_id: useIfStringEmpty(values.subcategory3_id) ?? undefined,
+  });
+  isLoading.value = false;
+}
 // insert data to db
 const errorMessage = ref("");
 async function insertData(values: any) {
@@ -126,6 +131,7 @@ async function insertData(values: any) {
 
 // For preview the icon and photo
 const iconPreview = ref<string | null>(null);
+const fileInputIcon = ref<HTMLInputElement | null>(null);
 // const photoPreview = ref<string | null>(null);
 
 function onFileChange(
@@ -135,7 +141,11 @@ function onFileChange(
 ) {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0];
-  if (!file) return;
+  if (!file) {
+    if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
+    iconPreview.value = null;
+    return;
+  }
 
   // update vee-validate form state
   setFieldValue(field, file);
@@ -153,9 +163,16 @@ function reset() {
   subcategories1.value = [];
   subcategories2.value = [];
   subcategories3.value = [];
-  if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
+  resetIcon(()=>{});
   // if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
   modal.value?.close();
+}
+
+function resetIcon(setFieldValue: Function) {
+  setFieldValue("icon", null); // reset in vee-validate state
+  if (fileInputIcon.value) fileInputIcon.value.value = ""; // reset DOM input
+  if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
+  iconPreview.value = null;
 }
 </script>
 
@@ -172,7 +189,7 @@ function reset() {
       <span>Tambah tautan dokumen baru</span>
     </template>
     <template #body>
-      <div class="create-form" >
+      <div class="create-form">
         <Form
           :validation-schema="documentSchema"
           @submit="handleSubmit"
@@ -219,13 +236,24 @@ function reset() {
               id="icon"
               :class="DEFAULT_INPUT_FILE"
               @change="(e) => onFileChange(e, 'icon', setFieldValue)"
+              ref="fileInputIcon"
             />
-            <div v-if="iconPreview" class="mt-2">
-              <img
-                :src="iconPreview"
-                alt="Icon Preview"
-                class="w-12 h-12 object-cover rounded border"
-              />
+            <div v-if="iconPreview" class="mt-2 flex gap-x-3 items-center">
+              <div class="img-p">
+                <img
+                  :src="iconPreview"
+                  alt="Icon Preview"
+                  class="w-12 h-12 object-cover rounded border"
+                />
+                <span class="text-center">Foto Terunggah</span>
+              </div>
+              <button
+                type="button"
+                class="h-fit p-2 bg-slate-800 text-slate-50 rounded"
+                @click="resetIcon(setFieldValue)"
+              >
+                Reset Icon
+              </button>
             </div>
           </div>
 

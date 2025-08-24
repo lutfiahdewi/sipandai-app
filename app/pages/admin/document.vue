@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertError, AlertSuccess, ButtonDefault } from "#components";
+import { AlertError, AlertSuccess, DocumentEdit } from "#components";
 import type { Database } from "~/types/supabase";
 definePageMeta({
   layout: "admin",
@@ -73,6 +73,7 @@ const refreshData = async () => {
   documents.value = [];
   await getData(); // always refresh
   alertSuccess.value?.call(5);
+  resetModal();
 };
 //data tabel ditarik saat halaman sudah dirender
 onMounted(getData);
@@ -80,8 +81,50 @@ onMounted(getData);
 //alert
 const alertSuccess = ref<InstanceType<typeof AlertSuccess> | null>(null);
 const alertError = ref<InstanceType<typeof AlertError> | null>(null);
+
+//Modal ref
+const editModal = ref<InstanceType<typeof DocumentEdit> | null>(null);
+const deleteModal = ref<InstanceType<typeof DocumentEdit> | null>(null);
+// variables passed to modal components
+const idEdit = ref("");
+const id = ref("");
+const name = ref("");
+// modal open
+function openEditModal(param: string) {
+  idEdit.value = param;
+  editModal.value?.open();
+}
+function openDeleteModal(param: string, param2: string) {
+  id.value = param;
+  name.value = param2;
+  deleteModal.value?.open();
+}
+function resetModal() {
+  id.value = "";
+  idEdit.value = "";
+  name.value = "";
+}
 </script>
 <template>
+  <!-- Modal utk edit dan delete -->
+  <DocumentEdit
+    :id="idEdit"
+    :table="tableName"
+    @refresh="refreshData"
+    @reset="resetModal"
+    @show-error="alertError?.call(5)"
+    @show-success="alertSuccess?.call(5)"
+    ref="editModal"
+  />
+  <DocumentDelete
+    :id="id"
+    :name="name"
+    :table="tableName"
+    ref="deleteModal"
+    @refresh="refreshData"
+    @show-error="alertError?.call(5)"
+    @show-success="alertSuccess?.call(5)"
+  />
   <div class="slot">
     <h1 class="mb-3 sm:mb-6 text-lg sm:text-2xl lg:text-4xl font-semibold">
       Kelola data tautan dokumen
@@ -111,21 +154,19 @@ const alertError = ref<InstanceType<typeof AlertError> | null>(null);
             v-if="props.column.field == 'id'"
             class="flex gap-x-1.5 sm:gap-x-3"
           >
-            <DocumentDelete
-              :id="props.row.id"
-              :name="props.row.name"
-              :table="tableName"
-              @refresh="refreshData"
-              @show-error="alertError?.call(5)"
-              @show-success="alertSuccess?.call(5)"
-            />
-            <DocumentEdit
-              :id="props.row.id"
-              :table="tableName"
-              @refresh="refreshData"
-              @show-error="alertError?.call(5)"
-              @show-success="alertSuccess?.call(5)"
-            />
+            <button
+              type="button"
+              @click="openDeleteModal(props.row.id, props.row.name)"
+            >
+              <IconDelete
+                class="w-7 h-7 sm:w-8 sm:h-8 p-[1px] rounded-md bg-red-500 text-white hover:bg-red-600 pointer-events-auto"
+              />
+            </button>
+            <button @click="openEditModal(props.row.id)">
+              <IconEdit
+                class="w-7 h-7 sm:w-8 sm:h-8 p-1 rounded-md bg-blue-500 text-white hover:bg-blue-600"
+              />
+            </button>
           </span>
           <span v-else-if="props.column.field == 'url'">
             <NuxtLink

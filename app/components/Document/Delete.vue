@@ -16,7 +16,13 @@ const modal = ref<InstanceType<typeof ModalBase> | null>(null);
 const supabase = useSupabaseClient();
 const isLoading = ref(false);
 const errorMessageDelete = ref("");
-
+// pass open modal method to parent component
+const open = () => {
+  modal.value?.open();
+};
+defineExpose({
+  open,
+});
 /**
  * Deleting data comes in two major step:
  * 1. Deleting the main data in table. It's done first to check if't able to done. Then return the data, catch the path
@@ -47,16 +53,12 @@ async function deleteData(table: string, id: string): Promise<boolean> {
     if (dataDeleted?.photo_path) pathsToDelete.push(dataDeleted.photo_path);
   }
   if (pathsToDelete.length > 0) {
-    console.log(pathsToDelete);
-    const { error: storageError } = await supabase.storage
-      .from("uploads")
-      .remove(pathsToDelete);
-
-    if (storageError) {
+    const { error: errorUpload } = await useDeleteImages(pathsToDelete,supabase);
+    if (errorUpload) {
       emit("show-error");
       isLoading.value = false;
       errorMessageDelete.value =
-        "Gagal menghapus. Pesan error: " + storageError.message;
+        "Gagal menghapus. Pesan error: " + errorUpload.message;
       return false;
     }
   }
@@ -76,13 +78,14 @@ async function deleteData(table: string, id: string): Promise<boolean> {
     class-header=" bg-red-400 text-slate-800 font-semibold text-base sm:text-xl"
     class-body=" h-fit "
     class-footer="  "
+    @click-outside="modal?.close()"
   >
     <template #header>
       <span>Hapus Tautan Dokumen</span>
     </template>
     <template #body>
       <h5 class="text-center">
-        Anda yakin akan menghapus Tautan Dokumen {{ name }} ?
+        Anda yakin akan menghapus tautan dokumen <span class="font-semibold">{{ name }}</span> ?
       </h5>
       <div class="error-box text-red-600" v-if="errorMessageDelete">
         {{ errorMessageDelete }}
@@ -118,9 +121,5 @@ async function deleteData(table: string, id: string): Promise<boolean> {
       </div>
     </template>
   </ModalBase>
-  <button type="button" @click="modal?.open()">
-    <IconDelete
-      class="w-7 h-7 sm:w-8 sm:h-8 p-[1px] rounded-md bg-red-500 text-white hover:bg-red-600 pointer-events-auto"
-    />
-  </button>
+  
 </template>

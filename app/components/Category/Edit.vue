@@ -154,6 +154,7 @@ onBeforeUnmount(() => {
                   alt="Icon Preview"
                   class="w-12 h-12 object-cover rounded border"
                 />
+                <span class="text-center">Foto Terunggah</span>
               </div>
             </div>
           </div>
@@ -183,6 +184,7 @@ onBeforeUnmount(() => {
                   alt="Photo Preview"
                   class="w-32 h-20 object-cover rounded border"
                 />
+                <span class="text-center">Foto Terunggah</span>
               </div>
             </div>
           </div>

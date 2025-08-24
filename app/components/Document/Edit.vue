@@ -2,9 +2,12 @@
 import { Form, Field, ErrorMessage } from "vee-validate";
 import type { ModalBase } from "#components";
 import type { Database } from "~/types/supabase";
+import _ from "lodash";
+
 const modal = ref<InstanceType<typeof ModalBase> | null>(null);
 const supabase = useSupabaseClient();
 const isLoading = ref(false);
+const errorMessage = ref("");
 // props : catch variable from parent
 const props = defineProps<{
   id: string;
@@ -13,16 +16,23 @@ const props = defineProps<{
 // emit : pass event to parent to listen
 const emit = defineEmits<{
   (e: "refresh"): void;
+  (e: "reset"): void;
   (e: "show-error"): void;
   (e: "show-success"): void;
 }>();
-
+// pass open modal method to
+const open = () => {
+  modal.value?.open();
+};
+defineExpose({
+  open,
+});
 // handler passed to <Form>
 async function handleSubmit(values: any) {
   isLoading.value = true;
   const icon_path: Ref<string | null> = ref(null);
-  console.log(values);
 
+  // If new image uploaded
   if (values.icon) {
     const { error } = await useUploadFile(
       icon_path,
@@ -32,28 +42,79 @@ async function handleSubmit(values: any) {
     );
     if (error) {
       errorMessage.value = error.message;
+      isLoading.value = false;
       return;
     }
+    //delete previous photo
+    const pathsToDelete = [];
+    if (currentData.value?.icon_path) {
+      pathsToDelete.push(currentData.value?.icon_path);
+      const { error: errorUpload } = await useDeleteImages(
+        pathsToDelete,
+        supabase
+      );
+      if (errorUpload) {
+        errorMessage.value = errorUpload.message;
+        isLoading.value = false;
+        return;
+      }
+    }
+  } else {
+    // no new image but already exist
+    if (currentData.value?.icon_path)
+      icon_path.value = currentData.value?.icon_path;
   }
-  insertData({
-    name: values.name,
-    url: values.url,
-    description: values.description,
-    icon_path: icon_path.value,
-    activity_date: values.activity_date,
-    category_id: values.category_id,
-    subcategory1_id: useIfStringEmpty(values.subcategory1_id) ?? undefined,
-    subcategory2_id: useIfStringEmpty(values.subcategory2_id) ?? undefined,
-    subcategory3_id: useIfStringEmpty(values.subcategory3_id) ?? undefined,
-  });
+  updateData(
+    {
+      name: values.name,
+      url: values.url,
+      description: values.description,
+      icon_path: icon_path.value,
+      activity_date: values.activity_date,
+      category_id: values.category_id,
+      subcategory1_id: useIfStringEmpty(values.subcategory1_id),
+      subcategory2_id: useIfStringEmpty(values.subcategory2_id),
+      subcategory3_id: useIfStringEmpty(values.subcategory3_id),
+    },
+    props.id
+  );
   isLoading.value = false;
 }
+// update data to db
+async function updateData(values: any, id: string) {
+  console.log(values);
+  if (errorMessage.value.length != 0) errorMessage.value = "";
+  const { error } = await supabase
+    .from(props.table)
+    .update(values as never)
+    .eq("id", id);
+  if (error) {
+    emit("show-error");
+    errorMessage.value =
+      "Gagal membuat tautan dokumen. Pesan error: " + error.message;
+  } else {
+    emit("show-success");
+    emit("refresh");
+    // modal.value?.close();
+    reset();
+  }
+}
 
+// fetch current data
+/**
+ * Step:
+ * 1 Define all variable
+ * 2. getDataInside func to get all data inside or under a certain category or subcategory
+ * 3. Trigger function to make option of table available, it's depend on what option selected in form. triggered onChange selection
+ * 4.
+ */
+const currentData: Ref<
+  Database["public"]["Tables"]["documents"]["Row"] | undefined
+> = ref(undefined);
 // getdata category
 const defaultSelector = "id, name,slug";
 const categories: Ref<Database["public"]["Tables"]["categories"]["Row"][]> =
   ref([]);
-
 //if category or subcat selected, query option under it
 const subcategories1: Ref<
   Database["public"]["Tables"]["subcategories1"]["Row"][]
@@ -93,17 +154,18 @@ async function triggerGetDataInside(
   e: Event,
   targetTable: "subcategories1" | "subcategories2" | "subcategories3"
 ) {
+  const target = e.target as HTMLSelectElement;
   if (targetTable == "subcategories1") {
     subcategories1.value = [];
     subcategories2.value = [];
     subcategories3.value = [];
+    // target.value.subcategory1_id = null;
   } else if (targetTable == "subcategories2") {
     subcategories2.value = [];
     subcategories3.value = [];
   } else {
     subcategories3.value = [];
   }
-  const target = e.target as HTMLSelectElement;
   if (!target.value) return;
   await getDataInside(
     target.value,
@@ -114,9 +176,29 @@ async function triggerGetDataInside(
   );
 }
 
-const errorMessage = ref("");
-// get data from db
+// get the detail data to edit
+const keyForm = ref(0);
+async function getDetailData() {
+  if (props.id.length < 1) return;
+  await getData(`id, name,url,description,icon_path,activity_date, category_id,subcategory1_id,subcategory2_id,subcategory3_id,
+  categories(id, name,
+    subcategories1 (id, name)  
+  ),
+  subcategories1 (
+      id, name,
+      subcategories2 (
+        id, name,
+        subcategories3 (id, name)
+      )
+    ),
+    subcategories2 (
+      id, name,
+      subcategories3 (id, name)
+    )
+  `);
+}
 async function getData(selector: string) {
+  isLoading.value = true;
   if (errorMessage.value.length != 0) errorMessage.value = "";
   const { data, error } = await supabase
     .from(props.table)
@@ -124,30 +206,26 @@ async function getData(selector: string) {
     .eq("id", props.id)
     .single();
   if (error) {
+    isLoading.value = false;
     emit("show-error");
     errorMessage.value =
       "Gagal memuat data tautan dokumen. Pesan error: " + error.message;
   }
-  console.log(data)
-}
-
-// insert data to db
-async function insertData(values: any) {
-  if (errorMessage.value.length != 0) errorMessage.value = "";
-  const { error } = await supabase.from(props.table).insert(values);
-  if (error) {
-    emit("show-error");
-    errorMessage.value =
-      "Gagal membuat tautan dokumen. Pesan error: " + error.message;
-  } else {
-    emit("show-success");
-    emit("refresh");
-    modal.value?.close();
+  if (data) {
+    currentData.value = data;
+    subcategories1.value = data.categories.subcategories1;
+    if (_.isObjectLike(data.subcategories1))
+      subcategories2.value = data.subcategories1.subcategories2;
+    if (_.isObjectLike(data.subcategories2))
+      subcategories3.value = data.subcategories2.subcategories3;
+    keyForm.value++;
   }
+  isLoading.value = false;
 }
 
 // For preview the icon and photo
 const iconPreview = ref<string | null>(null);
+const fileInputIcon = ref<HTMLInputElement | null>(null);
 // const photoPreview = ref<string | null>(null);
 
 function onFileChange(
@@ -166,30 +244,35 @@ function onFileChange(
   if (field === "icon") useUpdatePreview(iconPreview, file);
 }
 
-// cleanup
-onMounted(() => {
-  // useGetAllData("categories", categories, isLoading, supabase, defaultSelector);
-});
-function getDetailData(){
-  getData(` name,url,description,icon_path,activity_date, categories(id, name,
-    subcategories1 (
-      id, name,
-      subcategories2 (
-        id, name,
-        subcategories3 (id, name)
-      )
-    )  
-  )`);
-}
+// reset data
 function reset() {
+  emit("reset");
   errorMessage.value = "";
   subcategories1.value = [];
   subcategories2.value = [];
   subcategories3.value = [];
-  if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
-  // if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
+  currentData.value = undefined;
+  resetIcon(() => {});
+  keyForm.value++;
   modal.value?.close();
+  console.log("reset component!")
 }
+function resetIcon(setFieldValue: Function) {
+  setFieldValue("icon", null); // reset in vee-validate state
+  if (fileInputIcon.value) fileInputIcon.value.value = ""; // reset DOM input
+  if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
+  iconPreview.value = null;
+}
+
+// Vue lifecycle hooks
+onMounted(() => {
+  useGetAllData("categories", categories, isLoading, supabase, defaultSelector); // get all category data
+});
+// Get Data when modal clicked
+onUpdated(() => {
+  // useGetAllData("categories", categories, isLoading, supabase, defaultSelector);
+  getDetailData();
+});
 </script>
 
 <template>
@@ -207,6 +290,8 @@ function reset() {
     <template #body>
       <div class="create-form">
         <Form
+          :initial-values="currentData"
+          :key="keyForm"
           :validation-schema="documentSchema"
           @submit="handleSubmit"
           v-slot="{ setFieldValue, resetForm, values, errors }"
@@ -253,12 +338,31 @@ function reset() {
               :class="DEFAULT_INPUT_FILE"
               @change="(e) => onFileChange(e, 'icon', setFieldValue)"
             />
-            <div v-if="iconPreview" class="mt-2">
-              <img
-                :src="iconPreview"
-                alt="Icon Preview"
-                class="w-12 h-12 object-cover rounded border"
-              />
+            <div class="flex gap-x-3 mt-2">
+              <div v-if="values.icon_path">
+                <img
+                  :src="useGetImageUrl(values.icon_path, supabase)"
+                  class="h-12 w-12 object-contain"
+                />
+                <span class="text-center">Icon Tersimpan</span>
+              </div>
+              <div v-if="iconPreview" class="flex gap-x-3 items-center">
+                <div class="img-p">
+                  <img
+                    :src="iconPreview"
+                    alt="Icon Preview"
+                    class="w-12 h-12 object-cover rounded border"
+                  />
+                  <span class="text-center">Foto Terunggah</span>
+                </div>
+                <button
+                  type="button"
+                  class="h-fit p-2 bg-slate-800 text-slate-50 rounded"
+                  @click="resetIcon(setFieldValue)"
+                >
+                  Reset Icon
+                </button>
+              </div>
             </div>
           </div>
 
@@ -272,7 +376,6 @@ function reset() {
               name="activity_date"
               type="date"
               :class="DEFAULT_INPUT_FILE"
-              @change="(e: { target: { value: any; }; }) => console.log(e.target.value)"
             />
             <ErrorMessage name="activity_date" class="text-red-500 text-sm" />
           </div>
@@ -426,9 +529,4 @@ function reset() {
       </div>
     </template>
   </ModalBase>
-  <button @click="modal?.open(); getDetailData()">
-    <IconEdit
-      class="w-7 h-7 sm:w-8 sm:h-8 p-1 rounded-md bg-blue-500 text-white hover:bg-blue-600"
-    />
-  </button>
 </template>

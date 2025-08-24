@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export default async function uploadFile(path: Ref<string | null>, file: File, folder: string, supabase: SupabaseClient) {
-  console.log("Upload file called! =>", folder);
   const filePath = `${folder}/${Date.now()}-${file.name}`;
   const { error } = await supabase.storage
     .from("uploads")
