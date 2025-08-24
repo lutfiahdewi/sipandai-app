@@ -1,5 +1,5 @@
 import * as yup from 'yup'
-import Subcategory1 from '~/pages/admin/subcategory1.vue';
+
 const baseSchema =  yup.object({
   name: yup.string().required("Nama harus diisi"),
   description: yup.string().nullable(),

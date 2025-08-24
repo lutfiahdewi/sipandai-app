@@ -15,7 +15,9 @@ const mainDocuments: Ref<Database["public"]["Tables"]["documents"]["Row"][]> =
   ref([]);
 
 onMounted(async () => {
-  const { data, error } = await supabase.from("categories").select("id, name, description, icon_path, slug");
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id, name, description, icon_path, slug");
   if (!error) {
     _.remove(data, { name: "Main" }); //Exclude the main category
     categories.value = data;
@@ -99,14 +101,15 @@ onMounted(async () => {
       title="Kategori tim dan lain-lain"
       title-class="text-orange-600"
     >
-      <CardCategory
-        v-for="cat in categories"
-        :key="cat.id"
-        :id="cat.id"
-        :name="cat.name"
-        :slug="cat.slug"
-        :icon-path="useGetImageUrl(cat.icon_path, supabase)"
-      />
+        <CardCategory
+          v-for="cat in categories"
+          :key="cat.id"
+          :id="cat.id"
+          :name="cat.name"
+          :slug="cat.slug"
+          :icon-path="useGetImageUrl(cat.icon_path, supabase)"
+        />
+
     </SectionList>
   </div>
 </template>

@@ -52,30 +52,30 @@ useHead({
     <!-- Loading -->
     <div v-if="isLoading"><IndicatorLoading /></div>
 
-    <div v-else>
+    <div v-else class="flex flex-col min-h-[70vh]">
       <!-- Kategori Deskripsi -->
-      <SectionList
+      <SectionContent
         v-if="category"
         :title="category.name"
         :section-class="DEFAULT_PADDING_X_MINUS + ' pt-4 bg-orange-100 '"
         title-class="text-3xl sm:text-4xl lg:text-6xl font-bold text-gray-800"
       >
-        <!-- Gambar float kiri -->
+        <!-- Gambar -->
         <img
           v-if="category.photo_path"
           :src="useGetImageUrl(category.photo_path, supabase)"
           :alt="'Foto ' + category.name"
           :title="'Foto ' + category.name"
-          class="lg:float-left w-full lg:max-w-180 mr-4 mb-2 rounded-xl object-contain shadow"
+          class="w-full lg:max-w-180 mb-2 rounded-xl object-contain shadow"
         />
         <!-- Teks deskripsi -->
-        <p
+        <div
           v-if="category.description"
-          class="text-gray-700 text-base sm:text-lg"
+          class="desc text-gray-700 text-base sm:text-lg sm:w-96 lg:w-240"
         >
-          {{ category.description }}
-        </p>
-      </SectionList>
+          <p>{{ category.description }}</p>
+        </div>
+      </SectionContent>
       <!-- Subkategori -->
       <SectionList
         v-if="true"
@@ -109,6 +109,7 @@ useHead({
           :url="doc.url"
         />
       </SectionList>
+      <div class="dummy flex-1"></div>
     </div>
   </div>
 </template>
