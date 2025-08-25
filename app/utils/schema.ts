@@ -25,3 +25,30 @@ export const documentSchema = yup.object({
   subcategory2_id: yup.string().nullable(),
   subcategory3_id: yup.string().nullable(),
 });
+
+export const subcategories3Schema = yup.object({
+  name: yup.string().required("Nama harus diisi"),
+  description: yup.string().nullable(),
+  icon: yup.mixed().nullable(),
+  photo: yup.mixed().nullable(),
+  category_id: yup.string().required("Kategori harus terpilih"),
+  subcategory1_id: yup.string().required("Sub Kategori 1 harus terpilih"),
+  subcategory2_id: yup.string().required("Sub Kategori 2 harus terpilih"),
+});
+
+export const subcategories2Schema = yup.object({
+  name: yup.string().required("Nama harus diisi"),
+  description: yup.string().nullable(),
+  icon: yup.mixed().nullable(),
+  photo: yup.mixed().nullable(),
+  category_id: yup.string().required("Kategori harus terpilih"),
+  subcategory1_id: yup.string().required("Sub Kategori 1 harus terpilih"),
+});
+
+export const subcategories1Schema = yup.object({
+  name: yup.string().required("Nama harus diisi"),
+  description: yup.string().nullable(),
+  icon: yup.mixed().nullable(),
+  photo: yup.mixed().nullable(),
+  category_id: yup.string().required("Kategori harus terpilih"),
+});

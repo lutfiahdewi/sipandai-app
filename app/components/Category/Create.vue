@@ -30,14 +30,26 @@ defineExpose({
 });
 
 // handler passed to <Form>
+const errorMessage = ref('');
 async function handleSubmit(values: any) {
+  errorMessage.value='';
   isLoading.value = true;
   const icon_path: Ref<string | null> = ref(null);
   const photo_path: Ref<string | null> = ref(null);
-  if (values.icon)
-    await useUploadFile(icon_path, values.icon, "icons", supabase);
-  if (values.photo)
-    await useUploadFile(photo_path, values.photo, "photos", supabase);
+  if (values.icon){
+    const {error} = await useUploadFile(icon_path, values.icon, "icons", supabase);
+    if (error) {
+      errorMessage.value = error.message;
+      return;
+    }
+  }
+  if (values.photo){
+    const {error} = await useUploadFile(photo_path, values.photo, "photos", supabase);
+    if (error) {
+      errorMessage.value = error.message;
+      return;
+    }
+  }
   emit("submit", {
     name: values.name,
     description: values.description,
@@ -60,7 +72,11 @@ function onFileChange(
 ) {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0];
-  if (!file) return;
+  if (!file) {
+    if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
+    iconPreview.value = null;
+    return;
+  }
 
   // update vee-validate form state
   setFieldValue(field, file);
@@ -199,6 +215,8 @@ function reset(){
               </button>
             </div>
           </div>
+
+          <!-- button submission -->
           <div class="flex justify-center gap-x-3 text-sm sm:text-lg">
             <button
               :disabled="isLoading"
@@ -226,8 +244,8 @@ function reset(){
             </button>
           </div>
         </Form>
-        <div class="error-box text-red-600 py-3" v-if="props.createError">
-          {{ props.createError }}
+        <div class="error-box text-red-600 py-3" v-if="props.createError || errorMessage">
+          {{ props.createError }} <br> {{ errorMessage }}
         </div>
       </div>
     </template>

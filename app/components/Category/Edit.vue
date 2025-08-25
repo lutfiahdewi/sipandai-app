@@ -120,7 +120,11 @@ function onFileChange(
 ) {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0];
-  if (!file) return;
+  if (!file) {
+    if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
+    iconPreview.value = null;
+    return;
+  }
 
   // update vee-validate form state
   setFieldValue(field, file);
