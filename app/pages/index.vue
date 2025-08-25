@@ -45,7 +45,7 @@ onMounted(async () => {
   <div :class="DEFAULT_PADDING_X_MINUS">
     <!-- Banner Section -->
     <section class="relative w-full">
-      <img src="~/assets/img/front.jpg" alt="Hero" class="w-screen h-auto" />
+      <img src="/img/front.jpg" alt="Hero" class="w-screen h-auto" />
       <div class="absolute inset-0 bg-gray-800 opacity-50"></div>
 
       <div
