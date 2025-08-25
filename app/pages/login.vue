@@ -15,10 +15,10 @@ const isLoading = ref(false);
 
 watchEffect(() => {
   if (user.value) {
-    console.log("✅ Logged in as:", user.value.email);
+    // console.log("✅ Logged in as:", user.value.email);
     navigateTo("/admin/category");
   } else {
-    console.log("❌ Not logged in");
+    // console.log("❌ Not logged in");
   }
 });
 
@@ -35,7 +35,7 @@ async function login(values: any) {
   } else {
     // User session is now stored in Supabase client
     // console.log("Logged in as:", data.user);
-    await navigateTo("/admin/category"); // or your admin page
+    await navigateTo("/admin/"); // or your admin page
   }
   isLoading.value = false;
 }

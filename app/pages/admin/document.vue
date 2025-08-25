@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { AlertError, AlertSuccess, DocumentEdit } from "#components";
 import type { Database } from "~/types/supabase";
-definePageMeta({
-  layout: "admin",
-});
+
 // Ubah tableName dan columns sesuai nama dan kolom tabel
 const tableName = "documents";
 const columns = [

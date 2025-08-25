@@ -41,15 +41,17 @@ async function handleSubmit(values: any) {
   emit("submit", {
     name: values.name,
     description: values.description,
-    icon_path : icon_path.value,
-    photo_path : photo_path.value,
+    icon_path: icon_path.value,
+    photo_path: photo_path.value,
   });
   isLoading.value = false;
 }
 
 // For preview the icon and photo
 const iconPreview = ref<string | null>(null);
+const fileInputIcon = ref<HTMLInputElement | null>(null);
 const photoPreview = ref<string | null>(null);
+const fileInputPhoto = ref<HTMLInputElement | null>(null);
 
 function onFileChange(
   e: Event,
@@ -67,12 +69,25 @@ function onFileChange(
   if (field === "icon") useUpdatePreview(iconPreview, file);
   else useUpdatePreview(photoPreview, file);
 }
-
-// cleanup
-onBeforeUnmount(() => {
+function resetIcon(setFieldValue: Function) {
+  setFieldValue("icon", null); // reset in vee-validate state
+  if (fileInputIcon.value) fileInputIcon.value.value = ""; // reset DOM input
   if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
+  iconPreview.value = null;
+}
+function resetPhoto(setFieldValue: Function) {
+  setFieldValue("photo", null);
+  if (fileInputPhoto.value) fileInputPhoto.value.value = "";
   if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
-});
+  photoPreview.value = null;
+}
+
+function reset(){
+  resetIcon(()=>{});
+  resetPhoto(()=>{});
+  emit('reset-error')
+  modal.value?.close();
+}
 </script>
 
 <template>
@@ -82,7 +97,7 @@ onBeforeUnmount(() => {
     class-header=" text-slate-800 font-semibold text-base sm:text-xl"
     class-body=" max-h-[65vh] sm:max-h-[75vh] rounded-b-lg "
     class-footer=" hidden "
-    @click-outside="() => $emit('reset-error')"
+    @click-outside="reset()"
   >
     <template #header>
       <span>Tambah kategori baru</span>
@@ -133,13 +148,24 @@ onBeforeUnmount(() => {
               id="icon"
               :class="DEFAULT_INPUT_FILE"
               @change="(e) => onFileChange(e, 'icon', setFieldValue)"
+              ref="fileInputIcon"
             />
-            <div v-if="iconPreview" class="mt-2">
-              <img
-                :src="iconPreview"
-                alt="Icon Preview"
-                class="w-12 h-12 object-cover rounded border"
-              />
+            <div v-if="iconPreview" class="mt-2 flex gap-x-3 items-center">
+              <div class="img-p">
+                <img
+                  :src="iconPreview"
+                  alt="Icon Preview"
+                  class="w-12 h-12 object-cover rounded border"
+                />
+                <span class="text-center">Icon Terunggah</span>
+              </div>
+              <button
+                type="button"
+                class="h-fit p-2 bg-slate-800 text-slate-50 rounded"
+                @click="resetIcon(setFieldValue)"
+              >
+                Reset Icon
+              </button>
             </div>
           </div>
 
@@ -153,13 +179,24 @@ onBeforeUnmount(() => {
               id="photo"
               :class="DEFAULT_INPUT_FILE"
               @change="(e) => onFileChange(e, 'photo', setFieldValue)"
+              ref="fileInputPhoto"
             />
-            <div v-if="photoPreview" class="mt-2">
-              <img
-                :src="photoPreview"
-                alt="Photo Preview"
-                class="w-32 h-20 object-cover rounded border"
-              />
+            <div v-if="photoPreview" class="mt-2 flex gap-x-3 items-center">
+              <div class="img-p">
+                <img
+                  :src="photoPreview"
+                  alt="Photo Preview"
+                  class="w-12 h-12 object-cover rounded border"
+                />
+                <span class="text-center">Foto Terunggah</span>
+              </div>
+              <button
+                type="button"
+                class="h-fit p-2 bg-slate-800 text-slate-50 rounded"
+                @click="resetPhoto(setFieldValue)"
+              >
+                Reset Foto
+              </button>
             </div>
           </div>
           <div class="flex justify-center gap-x-3 text-sm sm:text-lg">

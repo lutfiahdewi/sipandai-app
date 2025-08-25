@@ -125,7 +125,7 @@ async function insertData(values: any) {
   } else {
     emit("show-success");
     emit("refresh");
-    modal.value?.close();
+    reset();
   }
 }
 
@@ -146,14 +146,18 @@ function onFileChange(
     iconPreview.value = null;
     return;
   }
-
   // update vee-validate form state
   setFieldValue(field, file);
-
   // revoke + update preview
   if (field === "icon") useUpdatePreview(iconPreview, file);
 }
 
+function resetIcon(setFieldValue: Function) {
+  setFieldValue("icon", null); // reset in vee-validate state
+  if (fileInputIcon.value) fileInputIcon.value.value = ""; // reset DOM input
+  if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
+  iconPreview.value = null;
+}
 // cleanup
 onMounted(() => {
   useGetAllData("categories", categories, isLoading, supabase, defaultSelector);
@@ -166,13 +170,6 @@ function reset() {
   resetIcon(()=>{});
   // if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
   modal.value?.close();
-}
-
-function resetIcon(setFieldValue: Function) {
-  setFieldValue("icon", null); // reset in vee-validate state
-  if (fileInputIcon.value) fileInputIcon.value.value = ""; // reset DOM input
-  if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
-  iconPreview.value = null;
 }
 </script>
 

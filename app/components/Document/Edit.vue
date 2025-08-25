@@ -258,10 +258,10 @@ function reset() {
   console.log("reset component!")
 }
 function resetIcon(setFieldValue: Function) {
-  setFieldValue("icon", null); // reset in vee-validate state
   if (fileInputIcon.value) fileInputIcon.value.value = ""; // reset DOM input
   if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
   iconPreview.value = null;
+  setFieldValue("icon", null); // reset in vee-validate state
 }
 
 // Vue lifecycle hooks
@@ -294,7 +294,7 @@ onUpdated(() => {
           :key="keyForm"
           :validation-schema="documentSchema"
           @submit="handleSubmit"
-          v-slot="{ setFieldValue, resetForm, values, errors }"
+          v-slot="{ setFieldValue, resetForm, values, errors, meta }"
         >
           <!-- Nama tautan dokumen -->
           <div class="mb-4">
@@ -498,7 +498,7 @@ onUpdated(() => {
 
           <div class="flex justify-center gap-x-3 text-sm sm:text-lg">
             <button
-              :disabled="isLoading"
+              :disabled="isLoading || meta.dirty !== true"
               type="submit"
               class="p-1.5 sm:p-3 min-w-18 sm:min-w-24 text-slate-50 font-medium bg-gradient-to-r from-blue-400 to-blue-500 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-400 rounded-lg disabled:opacity-50"
             >

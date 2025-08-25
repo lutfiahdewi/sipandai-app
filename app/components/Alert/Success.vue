@@ -57,7 +57,7 @@ defineExpose({
 </template>
 <style scoped>
 .alert-container {
-  z-index: 102;
+  z-index: 103;
 }
 .slide-fade-enter-from {
   transform: translate(100px);

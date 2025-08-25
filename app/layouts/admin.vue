@@ -16,10 +16,15 @@ const signOut = async () => {
 };
 const adminMenu = [
   {
+    name: "Dashboard",
+    url: "/admin/",
+    deskripsi: "",
+    icon: "hugeicons:paragraph-bullets-point-01",
+  },{
     name: "Kategori utama",
     url: "/admin/category",
     deskripsi: "",
-    icon: "hugeicons:paragraph-bullets-point-01",
+    icon: "hugeicons:dashboard-circle-edit",
   },
   {
     name: "Subkategori 1",

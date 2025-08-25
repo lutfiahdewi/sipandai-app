@@ -7,10 +7,6 @@ import {
 } from "#components";
 import type { Database } from "~/types/supabase";
 
-definePageMeta({
-  layout: "admin",
-});
-
 const tableName = "categories";
 const columns = [
   {

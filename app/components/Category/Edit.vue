@@ -6,8 +6,6 @@ import type { Database } from "~/types/supabase";
 const editCategory = ref<InstanceType<typeof ModalBase> | null>(null);
 const supabase = useSupabaseClient();
 const isLoading = ref(false);
-// props : catch variable from parent
-type category = Ref<Database["public"]["Tables"]["categories"]["Row"]>;
 const props = defineProps<{
   id: string;
   data: Database["public"]["Tables"]["categories"]["Row"];
@@ -18,7 +16,9 @@ const emit = defineEmits<{
   (e: "show-error"): void;
   (e: "show-success"): void;
 }>();
-const currentData = toRaw(props.data);
+// props : catch variable from parent
+type category = Ref<Database["public"]["Tables"]["categories"]["Row"]>;
+const currentData = ref(toRaw(props.data));
 // handler passed to <Form>
 const errorMessage = ref("");
 async function handleSubmit(values: any) {
@@ -26,21 +26,75 @@ async function handleSubmit(values: any) {
   errorMessage.value = "";
   // console.log(values.name);
   // console.log(currentData.name);
-  const icon_path: Ref<string | null> = ref(currentData.icon_path);
-  const photo_path: Ref<string | null> = ref(currentData.photo_path);
-  if (values.icon)
-    await useUploadFile(icon_path, values.icon, "icons", supabase);
-  if (values.photo)
-    await useUploadFile(photo_path, values.photo, "photos", supabase);
+  const icon_path: Ref<string | null> = ref(currentData.value.icon_path);
+  const photo_path: Ref<string | null> = ref(currentData.value.photo_path);
+  const pathsToDelete = [];
+  // if there is new icon
+  if (values.icon) {
+    const { error } = await useUploadFile(
+      icon_path,
+      values.icon,
+      "icons",
+      supabase
+    );
+    if (error) {
+      errorMessage.value = error.message;
+      isLoading.value = false;
+      return;
+    }
+    if (currentData.value?.icon_path)
+      pathsToDelete.push(currentData.value?.icon_path);
+  } else {
+    // no new image but already exist
+    if (currentData.value?.icon_path)
+      icon_path.value = currentData.value?.icon_path;
+  }
+
+  // if there is new photo
+  if (values.photo) {
+    const { error } = await useUploadFile(
+      photo_path,
+      values.photo,
+      "photos",
+      supabase
+    );
+    if (error) {
+      errorMessage.value = error.message;
+      isLoading.value = false;
+      return;
+    }
+    if (currentData.value?.icon_path)
+      pathsToDelete.push(currentData.value?.icon_path);
+  } else {
+    // no new image but already exist
+    if (currentData.value?.icon_path)
+      icon_path.value = currentData.value?.icon_path;
+  }
+
+  // if any previous photos exist
+  if (pathsToDelete.length > 0) {
+    const { error: errorUpload } = await useDeleteImages(
+      pathsToDelete,
+      supabase
+    );
+    if (errorUpload) {
+      errorMessage.value = errorUpload.message;
+      isLoading.value = false;
+      return;
+    }
+  }
+
+  // update alldata
   const { error } = await supabase
     .from(props.table)
     .update({
       name: values.name,
       description: values.description,
-      icon_path : icon_path.value,
-    photo_path : photo_path.value,
-    } as never)//idk why ts should take it as never
-    .eq("id", currentData.id);
+      icon_path: icon_path.value,
+      photo_path: photo_path.value,
+    } as never) //idk why ts should take it as never
+    .eq("id", currentData.value.id);
+
   if (error) {
     emit("show-error");
     errorMessage.value =
@@ -48,14 +102,16 @@ async function handleSubmit(values: any) {
   } else {
     emit("show-success");
     emit("refresh");
-    editCategory.value?.close();
+    reset();
   }
   isLoading.value = false;
 }
 
 // For preview the icon and photo
 const iconPreview = ref<string | null>(null);
+const fileInputIcon = ref<HTMLInputElement | null>(null);
 const photoPreview = ref<string | null>(null);
+const fileInputPhoto = ref<HTMLInputElement | null>(null);
 
 function onFileChange(
   e: Event,
@@ -73,12 +129,26 @@ function onFileChange(
   if (field === "icon") useUpdatePreview(iconPreview, file);
   else useUpdatePreview(photoPreview, file);
 }
-
-// cleanup
-onBeforeUnmount(() => {
+function resetIcon(setFieldValue: Function) {
+  setFieldValue("icon", null); // reset in vee-validate state
+  if (fileInputIcon.value) fileInputIcon.value.value = ""; // reset DOM input
   if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
+  iconPreview.value = null;
+}
+function resetPhoto(setFieldValue: Function) {
+  setFieldValue("photo", null);
+  if (fileInputPhoto.value) fileInputPhoto.value.value = "";
   if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
-});
+  photoPreview.value = null;
+}
+// cleanup
+
+function reset() {
+  resetIcon(() => {});
+  resetPhoto(() => {});
+  errorMessage.value = "";
+  editCategory.value?.close();
+}
 </script>
 
 <template>
@@ -88,6 +158,7 @@ onBeforeUnmount(() => {
     class-header=" bg-blue-400 text-slate-800 font-semibold text-base sm:text-xl"
     class-body=" max-h-[65vh] sm:max-h-[75vh] rounded-b-lg "
     class-footer=" hidden "
+    @click-outside="reset()"
   >
     <template #header>
       <span>Ubah data kategori</span>
@@ -148,13 +219,22 @@ onBeforeUnmount(() => {
                 />
                 <span class="text-center">Icon Tersimpan</span>
               </div>
-              <div v-if="iconPreview" class="">
-                <img
-                  :src="iconPreview"
-                  alt="Icon Preview"
-                  class="w-12 h-12 object-cover rounded border"
-                />
-                <span class="text-center">Foto Terunggah</span>
+              <div v-if="iconPreview" class="mt-2 flex gap-x-3 items-center">
+                <div class="img-p">
+                  <img
+                    :src="iconPreview"
+                    alt="Icon Preview"
+                    class="w-12 h-12 object-cover rounded border"
+                  />
+                  <span class="text-center">Icon Terunggah</span>
+                </div>
+                <button
+                  type="button"
+                  class="h-fit p-2 bg-slate-800 text-slate-50 rounded"
+                  @click="resetIcon(setFieldValue)"
+                >
+                  Reset Icon
+                </button>
               </div>
             </div>
           </div>
@@ -178,16 +258,26 @@ onBeforeUnmount(() => {
                 />
                 <span class="text-center">Foto Tersimpan</span>
               </div>
-              <div v-if="photoPreview" class="">
-                <img
-                  :src="photoPreview"
-                  alt="Photo Preview"
-                  class="w-32 h-20 object-cover rounded border"
-                />
-                <span class="text-center">Foto Terunggah</span>
+              <div v-if="photoPreview" class="mt-2 flex gap-x-3 items-center">
+                <div class="img-p">
+                  <img
+                    :src="photoPreview"
+                    alt="Photo Preview"
+                    class="w-12 h-12 object-cover rounded border"
+                  />
+                  <span class="text-center">Foto Terunggah</span>
+                </div>
+                <button
+                  type="button"
+                  class="h-fit p-2 bg-slate-800 text-slate-50 rounded"
+                  @click="resetPhoto(setFieldValue)"
+                >
+                  Reset Foto
+                </button>
               </div>
             </div>
           </div>
+          <!-- button submission -->
           <div class="flex justify-center gap-x-3 text-sm sm:text-lg">
             <button
               :disabled="isLoading || meta.dirty !== true"
@@ -204,10 +294,7 @@ onBeforeUnmount(() => {
               <span v-else>Simpan Perubahan</span>
             </button>
             <button
-              @click="
-                editCategory?.close();
-                errorMessage = '';
-              "
+              @click="reset()"
               type="reset"
               class="p-1 sm:p-2 min-w-18 sm:min-w-24 bg-slate-300 font-normal rounded-lg hover:bg-slate-400 focus:ring-4 focus:outline-none focus:ring-slate-300"
             >
