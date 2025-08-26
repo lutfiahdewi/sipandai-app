@@ -4,46 +4,49 @@ import { useSupabaseClient } from "#imports";
 import { ref, onMounted } from "vue";
 import type { Database } from "~/types/supabase";
 import type { QueryResult, QueryData, QueryError } from "@supabase/supabase-js";
+import { useNavigation } from "~/composables/useNavigation";
 
 const route = useRoute();
 const supabase = useSupabaseClient();
 
-const category: Ref<Database["public"]["Tables"]["categories"]["Row"] | null> =
+const subcategories2: Ref<Database["public"]["Tables"]["subcategories2"]["Row"] | null> =
   ref(null);
-const subcategories1: Ref<
-  Database["public"]["Tables"]["subcategories1"]["Row"][]
+const subcategories3: Ref<
+  Database["public"]["Tables"]["subcategories3"]["Row"][]
 > = ref([]);
 const documents: Ref<Database["public"]["Tables"]["documents"]["Row"][]> = ref(
   []
 );
 const isLoading = ref(true);
-
-const categorySlug = route.params.slug;
+const nav = useNavigation("subcategory2");
+const subcat = route.params.subcat2 as string;
+nav.subcat2.value = subcat;
 onMounted(async () => {
   const queryAll = supabase
-    .from("categories")
-    .select(
-      `
-    *,
-    subcategories1(id, name, slug, icon_path),
-    documents(id, name, slug, icon_path, url)
-  `
-    )
-    .eq("slug", categorySlug)
+    .from("subcategories2")
+    .select( `*, subcategories3(id, name, slug, icon_path)`)
+    .eq("slug", subcat)
     .single();
 
   type queryBulk = QueryData<typeof queryAll>;
   const { data, error } = await queryAll;
   if (error) throw error;
   const result: queryBulk = data;
-  category.value = result;
-  subcategories1.value = result.subcategories1;
-  documents.value = result.documents;
+  subcategories2.value = result;
+  subcategories3.value = result.subcategories3;
+  
+  //data dokumen
+  const { data: dataDocuments, error : errorDocuments } = await supabase
+  .from('documents')
+  .select('id, name, slug, icon_path, url')
+  .eq('subcategory2_id', subcategories2.value.id)
+  .is('subcategory3_id', null) 
+  documents.value = dataDocuments;
 
   isLoading.value = false;
 });
 useHead({
-  title: category.value?.name,
+  title: subcategories2.value?.name,
 });
 </script>
 
@@ -55,42 +58,42 @@ useHead({
     <div v-else class="flex flex-col min-h-[70vh]">
       <!-- Kategori Deskripsi -->
       <SectionContent
-        v-if="category"
-        :title="category.name"
+        v-if="subcategories2"
+        :title="subcategories2.name"
         :section-class="DEFAULT_PADDING_X_MINUS + ' pt-4 bg-orange-100 '"
         title-class="text-3xl sm:text-4xl lg:text-6xl font-bold text-gray-800"
       >
         <!-- Gambar -->
         <img
-          v-if="category.photo_path"
-          :src="useGetImageUrl(category.photo_path, supabase)"
-          :alt="'Foto ' + category.name"
-          :title="'Foto ' + category.name"
+          v-if="subcategories2.photo_path"
+          :src="useGetImageUrl(subcategories2.photo_path, supabase)"
+          :alt="'Foto ' + subcategories2.name"
+          :title="'Foto ' + subcategories2.name"
           class="w-full lg:max-w-180 mb-2 rounded-xl object-contain shadow"
         />
         <!-- Teks deskripsi -->
         <div
-          v-if="category.description"
+          v-if="subcategories2.description"
           class="desc text-gray-700 text-base sm:text-lg sm:w-96 lg:w-240"
         >
-          <p>{{ category.description }}</p>
+          <p>{{ subcategories2.description }}</p>
         </div>
       </SectionContent>
       <!-- Subkategori -->
       <SectionList
         v-if="true"
         id="categoryList"
-        title="Subkategori"
+        title="Subkategori 3"
         section-class=""
         title-class="text-orange-600"
       >
         <CardCategory
-          v-for="cat in subcategories1"
+          v-for="cat in subcategories3"
           :key="cat.id"
           :id="cat.id"
           :name="cat.name"
           :icon-path="useGetImageUrl(cat.icon_path, supabase)"
-          :slug="'subcategory1/' + cat.slug"
+          :slug="`subcategory1/subcategory2/subcategory3/${cat.slug}`"
         />
       </SectionList>
       <!-- Dokumen dibawah kategori ini -->

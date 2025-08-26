@@ -18,7 +18,7 @@ const props = defineProps<{
       class="w-12 sm:w-16 h-12 sm:h-16 object-contain p-1.5 sm:p-2"
     />
     <h3
-      class="truncate sm:text-xl font-medium text-gray-800 sm:w-60"
+      class="truncate sm:text-lg font-medium text-gray-800 sm:w-60"
       :title="name"
     >
       {{ name }}
