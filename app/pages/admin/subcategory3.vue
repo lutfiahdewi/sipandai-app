@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertError, AlertSuccess, DocumentEdit } from "#components";
+import { AlertError, AlertSuccess, DocumentEdit, SubcategoryDelete, SubcategoryEdit } from "#components";
 import type { Database } from "~/types/supabase";
 
 // Ubah tableName dan columns sesuai nama dan kolom tabel
@@ -68,8 +68,8 @@ const alertSuccess = ref<InstanceType<typeof AlertSuccess> | null>(null);
 const alertError = ref<InstanceType<typeof AlertError> | null>(null);
 
 //Modal ref
-const editModal = ref<InstanceType<typeof DocumentEdit> | null>(null);
-const deleteModal = ref<InstanceType<typeof DocumentEdit> | null>(null);
+const editModal = ref<InstanceType<typeof SubcategoryEdit> | null>(null);
+const deleteModal = ref<InstanceType<typeof SubcategoryDelete> | null>(null);
 // variables passed to modal components
 const idEdit = ref("");
 const id = ref("");
@@ -92,8 +92,9 @@ function resetModal() {
 </script>
 <template>
   <!-- Modal utk edit dan delete -->
-  <DocumentEdit
+  <SubcategoryEdit
     :id="idEdit"
+    :type="tableName"
     :table="tableName"
     @refresh="refreshData"
     @reset="resetModal"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertError, AlertSuccess, DocumentEdit } from "#components";
+import { AlertError, AlertSuccess, DocumentDelete, DocumentEdit } from "#components";
 import type { Database } from "~/types/supabase";
 
 // Ubah tableName dan columns sesuai nama dan kolom tabel
@@ -82,7 +82,7 @@ const alertError = ref<InstanceType<typeof AlertError> | null>(null);
 
 //Modal ref
 const editModal = ref<InstanceType<typeof DocumentEdit> | null>(null);
-const deleteModal = ref<InstanceType<typeof DocumentEdit> | null>(null);
+const deleteModal = ref<InstanceType<typeof DocumentDelete> | null>(null);
 // variables passed to modal components
 const idEdit = ref("");
 const id = ref("");

@@ -177,11 +177,6 @@ function resetPhoto(setFieldValue: Function) {
 }
 onMounted(() => {
   subNumber.value = Number(props.type.charAt(props.type.length - 1))
-  /*if (props.type === "subcategories1") {
-    subNumber.value = 1;
-  } else if (props.type === "subcategories2") {
-    subNumber.value = 2;
-  } else subNumber.value = 3;*/
   useGetAllData("categories", categories, isLoading, supabase, defaultSelector);
 });
 // cleanup

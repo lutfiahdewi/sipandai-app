@@ -7,11 +7,11 @@ import _ from "lodash";
 const modal = ref<InstanceType<typeof ModalBase> | null>(null);
 const supabase = useSupabaseClient();
 const isLoading = ref(false);
-const errorMessage = ref("");
 // props : catch variable from parent
 const props = defineProps<{
   id: string;
   table: string;
+  type: "subcategories1" | "subcategories2" | "subcategories3";
 }>();
 // emit : pass event to parent to listen
 const emit = defineEmits<{
@@ -27,78 +27,8 @@ const open = () => {
 defineExpose({
   open,
 });
-// handler passed to <Form>
-async function handleSubmit(values: any) {
-  isLoading.value = true;
-  const icon_path: Ref<string | null> = ref(null);
-
-  // If new image uploaded
-  if (values.icon) {
-    const { error } = await useUploadFile(
-      icon_path,
-      values.icon,
-      "icons",
-      supabase
-    );
-    if (error) {
-      errorMessage.value = error.message;
-      isLoading.value = false;
-      return;
-    }
-    //delete previous photo
-    const pathsToDelete = [];
-    if (currentData.value?.icon_path) {
-      pathsToDelete.push(currentData.value?.icon_path);
-      const { error: errorUpload } = await useDeleteImages(
-        pathsToDelete,
-        supabase
-      );
-      if (errorUpload) {
-        errorMessage.value = errorUpload.message;
-        isLoading.value = false;
-        return;
-      }
-    }
-  } else {
-    // no new image but already exist
-    if (currentData.value?.icon_path)
-      icon_path.value = currentData.value?.icon_path;
-  }
-  updateData(
-    {
-      name: values.name,
-      url: values.url,
-      description: values.description,
-      icon_path: icon_path.value,
-      activity_date: values.activity_date,
-      category_id: values.category_id,
-      subcategory1_id: useIfStringEmpty(values.subcategory1_id),
-      subcategory2_id: useIfStringEmpty(values.subcategory2_id),
-      subcategory3_id: useIfStringEmpty(values.subcategory3_id),
-    },
-    props.id
-  );
-  isLoading.value = false;
-}
-// update data to db
-async function updateData(values: any, id: string) {
-  console.log(values);
-  if (errorMessage.value.length != 0) errorMessage.value = "";
-  const { error } = await supabase
-    .from(props.table)
-    .update(values as never)
-    .eq("id", id);
-  if (error) {
-    emit("show-error");
-    errorMessage.value =
-      "Gagal membuat tautan dokumen. Pesan error: " + error.message;
-  } else {
-    emit("show-success");
-    emit("refresh");
-    // modal.value?.close();
-    reset();
-  }
-}
+//set type of subcategory
+const subNumber = ref(0);
 
 // fetch current data
 /**
@@ -122,10 +52,15 @@ const subcategories1: Ref<
 const subcategories2: Ref<
   Database["public"]["Tables"]["subcategories2"]["Row"][]
 > = ref([]);
-const subcategories3: Ref<
-  Database["public"]["Tables"]["subcategories3"]["Row"][]
-> = ref([]);
-const dataCollection = { subcategories1, subcategories2, subcategories3 };
+const dataCollection = { subcategories1, subcategories2 };
+/**
+ *
+ * @param targetValue the value use to filter
+ * @param targetTable the table in db to filter
+ * @param filtered_id parameter used to filter
+ * @param targetData the variable that would be mutated
+ * @param selector
+ */
 const getDataInside = async (
   targetValue: string,
   targetTable: string,
@@ -152,20 +87,14 @@ const getDataInside = async (
 
 async function triggerGetDataInside(
   e: Event,
-  targetTable: "subcategories1" | "subcategories2" | "subcategories3"
+  targetTable: "subcategories1" | "subcategories2"
 ) {
-  const target = e.target as HTMLSelectElement;
   if (targetTable == "subcategories1") {
     subcategories1.value = [];
     subcategories2.value = [];
-    subcategories3.value = [];
-    // target.value.subcategory1_id = null;
-  } else if (targetTable == "subcategories2") {
-    subcategories2.value = [];
-    subcategories3.value = [];
-  } else {
-    subcategories3.value = [];
-  }
+  } else subcategories2.value = [];
+
+  const target = e.target as HTMLSelectElement;
   if (!target.value) return;
   await getDataInside(
     target.value,
@@ -175,27 +104,24 @@ async function triggerGetDataInside(
     defaultSelector
   );
 }
-
 // get the detail data to edit
 const keyForm = ref(0);
+const selector = ref("");
 async function getDetailData() {
   if (props.id.length < 1) return;
-  await getData(`id, name,url,description,icon_path,activity_date, category_id,subcategory1_id,subcategory2_id,subcategory3_id,
-  categories(id, name,
-    subcategories1 (id, name)  
-  ),
-  subcategories1 (
-      id, name,
-      subcategories2 (
-        id, name,
-        subcategories3 (id, name)
-      )
-    ),
-    subcategories2 (
-      id, name,
-      subcategories3 (id, name)
-    )
-  `);
+
+  if (props.type === "subcategories1")
+    selector.value =
+      "id, name, description,icon_path, photo_path, categories(name, id)";
+  else if (props.type === "subcategories2")
+    selector.value =
+      "id, name, description,icon_path, photo_path, subcategories1(name, id, categories!inner(name, id))";
+  else
+    selector.value =
+      "id, name, description,icon_path, photo_path, subcategories2 (name, id, subcategories1!inner(name, id, categories!inner(name, id)))";
+
+  await getData(selector.value);
+  keyForm.value++;
 }
 async function getData(selector: string) {
   isLoading.value = true;
@@ -211,22 +137,100 @@ async function getData(selector: string) {
     errorMessage.value =
       "Gagal memuat data tautan dokumen. Pesan error: " + error.message;
   }
+  // getting inside the data
   if (data) {
     currentData.value = data;
-    subcategories1.value = data.categories.subcategories1;
-    if (_.isObjectLike(data.subcategories1))
-      subcategories2.value = data.subcategories1.subcategories2;
-    if (_.isObjectLike(data.subcategories2))
-      subcategories3.value = data.subcategories2.subcategories3;
+    if (props.type === "subcategories2") {
+      currentData.value["subcategory1_id"] = data.subcategories1.id;
+      currentData.value["category_id"] = data.subcategories1.categories.id;
+      getDataInside(data.subcategories1.id,"subcategories1","id",subcategories1,defaultSelector
+      );
+    } else if (props.type === "subcategories3") {
+      currentData.value["subcategory2_id"] = data.subcategories2.id;
+      currentData.value["subcategory1_id"] =
+        data.subcategories2.subcategories1.id;
+      currentData.value["category_id"] =
+        data.subcategories2.subcategories1.categories.id;
+      getDataInside(data.subcategories2.id,"subcategories2","id",subcategories2,defaultSelector
+      );
+      getDataInside(data.subcategories2.subcategories1.id,"subcategories3","id",subcategories1,defaultSelector
+      );
+    } else {
+      currentData.value["category_id"] = data.categories.id;
+    }
     keyForm.value++;
   }
   isLoading.value = false;
 }
 
+// handler passed to <Form>
+async function handleSubmit(values: any) {
+  console.log("sunit called");
+  isLoading.value = true;
+  const icon_path: Ref<string | null> = ref(null);
+  const photo_path: Ref<string | null> = ref(null);
+  if (values.icon) {
+    const { error } = await useUploadFile(
+      icon_path,
+      values.icon,
+      "icons",
+      supabase
+    );
+    if (error) {
+      errorMessage.value = error.message;
+      return;
+    }
+  }
+  if (values.photo) {
+    const { error } = await useUploadFile(
+      photo_path,
+      values.photo,
+      "photos",
+      supabase
+    );
+    if (error) {
+      errorMessage.value = error.message;
+      return;
+    }
+  }
+  var temp: any = {};
+  if (subNumber.value == 1) temp["category_id"] = values.category_id;
+  else if (subNumber.value == 2)
+    temp["subcategory1_id"] = values.subcategory1_id;
+  else if (subNumber.value == 3)
+    temp["subcategory2_id"] = values.subcategory2_id;
+
+  insertData({
+    name: values.name,
+    description: values.description,
+    icon_path: icon_path.value,
+    photo_path: photo_path.value,
+    ...temp,
+  });
+  isLoading.value = false;
+}
+// insert data to db
+const errorMessage = ref("");
+async function insertData(values: any) {
+  if (errorMessage.value.length != 0) errorMessage.value = "";
+  // console.log(values);
+
+  const { error } = await supabase.from(props.table).insert(values);
+  if (error) {
+    emit("show-error");
+    errorMessage.value = `Gagal membuat subkategori ${subNumber}. Pesan error:  + ${error.message}`;
+  } else {
+    emit("show-success");
+    emit("refresh");
+    reset();
+  }
+}
+
 // For preview the icon and photo
 const iconPreview = ref<string | null>(null);
 const fileInputIcon = ref<HTMLInputElement | null>(null);
-// const photoPreview = ref<string | null>(null);
+const photoPreview = ref<string | null>(null);
+const fileInputPhoto = ref<HTMLInputElement | null>(null);
 
 function onFileChange(
   e: Event,
@@ -235,42 +239,47 @@ function onFileChange(
 ) {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0];
-  if (!file) return;
-
-  // update vee-validate form state
+  if (!file) {
+    if (field === "icon") resetIcon(() => {});
+    else resetPhoto(() => {});
+    return;
+  }
   setFieldValue(field, file);
-
-  // revoke + update preview
   if (field === "icon") useUpdatePreview(iconPreview, file);
+  else useUpdatePreview(photoPreview, file);
 }
 
-// reset data
-function reset() {
-  emit("reset");
-  errorMessage.value = "";
-  subcategories1.value = [];
-  subcategories2.value = [];
-  subcategories3.value = [];
-  currentData.value = undefined;
-  resetIcon(() => {});
-  keyForm.value++;
-  modal.value?.close();
-  // console.log("reset component!")
-}
 function resetIcon(setFieldValue: Function) {
+  setFieldValue("icon", null); // reset in vee-validate state
   if (fileInputIcon.value) fileInputIcon.value.value = ""; // reset DOM input
   if (iconPreview.value) URL.revokeObjectURL(iconPreview.value);
   iconPreview.value = null;
-  setFieldValue("icon", null); // reset in vee-validate state
+}
+function resetPhoto(setFieldValue: Function) {
+  setFieldValue("photo", null);
+  if (fileInputPhoto.value) fileInputPhoto.value.value = "";
+  if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
+  photoPreview.value = null;
+}
+// cleanup
+function reset() {
+  emit('reset');
+  errorMessage.value = "";
+  subcategories1.value = [];
+  subcategories2.value = [];
+  resetIcon(() => {});
+  resetPhoto(() => {});
+  keyForm.value++;
+  modal.value?.close();
 }
 
 // Vue lifecycle hooks
 onMounted(() => {
+  subNumber.value = Number(props.type.charAt(props.type.length - 1));
   useGetAllData("categories", categories, isLoading, supabase, defaultSelector); // get all category data
 });
 // Get Data when modal clicked
 onUpdated(() => {
-  // useGetAllData("categories", categories, isLoading, supabase, defaultSelector);
   getDetailData();
 });
 </script>
@@ -285,18 +294,24 @@ onUpdated(() => {
     @click-outside="reset()"
   >
     <template #header>
-      <span>Ubah tautan dokumen baru</span>
+      <span>Ubah subkategori {{ subNumber }}</span>
     </template>
     <template #body>
       <div class="create-form">
         <Form
           :initial-values="currentData"
           :key="keyForm"
-          :validation-schema="documentSchema"
+          :validation-schema="
+            subNumber === 3
+              ? subcategories3Schema
+              : subNumber === 2
+              ? subcategories2Schema
+              : subcategories1Schema
+          "
           @submit="handleSubmit"
           v-slot="{ setFieldValue, resetForm, values, errors, meta }"
         >
-          <!-- Nama tautan dokumen -->
+          <!-- Nama subkategori -->
           <div class="mb-4">
             <label :class="DEFAULT_LABEL" for="name">Nama :</label>
             <Field name="name" id="name" :class="DEFAULT_INPUT" />
@@ -305,16 +320,6 @@ onUpdated(() => {
               class="text-red-500 text-sm sm:text-base"
             />
           </div>
-          <!-- Tautan dokumen -->
-          <div class="mb-4">
-            <label :class="DEFAULT_LABEL" for="url">Link/URL :</label>
-            <Field name="url" id="url" :class="DEFAULT_INPUT" />
-            <ErrorMessage
-              name="url"
-              class="text-red-500 text-sm sm:text-base"
-            />
-          </div>
-
           <!-- Deskripsi -->
           <div class="mb-4">
             <label for="description" :class="DEFAULT_LABEL">Deskripsi :</label>
@@ -337,6 +342,7 @@ onUpdated(() => {
               id="icon"
               :class="DEFAULT_INPUT_FILE"
               @change="(e) => onFileChange(e, 'icon', setFieldValue)"
+              ref="fileInputIcon"
             />
             <div class="flex gap-x-3 mt-2">
               <div v-if="values.icon_path">
@@ -366,18 +372,43 @@ onUpdated(() => {
             </div>
           </div>
 
-          <!-- Tanggal kegiatan -->
+          <!-- Photo -->
           <div class="mb-4">
-            <label for="activity_date" :class="DEFAULT_LABEL"
-              >Tanggal kegiatan</label
-            >
-            <Field
-              id="activity_date"
-              name="activity_date"
-              type="date"
+            <label for="photo" :class="DEFAULT_LABEL">Photo</label>
+            <input
+              type="file"
+              accept="image/*"
+              name="photo"
+              id="photo"
               :class="DEFAULT_INPUT_FILE"
+              @change="(e) => onFileChange(e, 'photo', setFieldValue)"
+              ref="fileInputPhoto"
             />
-            <ErrorMessage name="activity_date" class="text-red-500 text-sm" />
+            <div class="flex gap-x-3 mt-2">
+              <div v-if="values.photo_path">
+                <img
+                  :src="useGetImageUrl(values.photo_path, supabase)"
+                  class="h-12 w-12 object-contain"
+                />
+                <span class="text-center">Foto Tersimpan</span>
+              </div>
+            <div v-if="photoPreview" class="flex gap-x-3 items-center">
+              <div class="img-p">
+                <img
+                  :src="photoPreview"
+                  alt="Photo Preview"
+                  class="w-12 h-12 object-cover rounded border"
+                />
+                <span class="text-center">Foto Terunggah</span>
+              </div>
+              <button
+                type="button"
+                class="h-fit p-2 bg-slate-800 text-slate-50 rounded"
+                @click="resetPhoto(setFieldValue)"
+              >
+                Reset Foto
+              </button>
+            </div></div>
           </div>
 
           <!-- Kategori kegiatan -->
@@ -419,11 +450,8 @@ onUpdated(() => {
               @change="triggerGetDataInside($event, 'subcategories2')"
               :disabled="isLoading"
             >
-              <option :value="null" class="hover:bg-sky-200" disabled>
+              <option value="" class="hover:bg-sky-200" disabled>
                 -- Pilih Sub Kategori 1 --
-              </option>
-              <option value="" class="hover:bg-sky-200">
-                (( Tanpa Sub Kategori 1 ))
               </option>
               <option
                 v-for="cat in subcategories1"
@@ -446,14 +474,10 @@ onUpdated(() => {
               id="subcategory2_id"
               name="subcategory2_id"
               :class="DEFAULT_INPUT_FILE"
-              @change="triggerGetDataInside($event, 'subcategories3')"
               :disabled="isLoading"
             >
-              <option :value="null" class="hover:bg-sky-200" disabled selected>
+              <option value="" class="hover:bg-sky-200" disabled selected>
                 -- Pilih Sub Kategori 2 --
-              </option>
-              <option value="" class="hover:bg-sky-200">
-                (( Tanpa Sub Kategori 2 ))
               </option>
               <option
                 v-for="cat in subcategories2"
@@ -466,39 +490,10 @@ onUpdated(() => {
             </Field>
             <ErrorMessage name="subcategory2_id" class="text-red-500 text-sm" />
           </div>
-          <!-- Subkategori 3 kegiatan -->
-          <div class="mb-4" v-if="subcategories3.length > 0">
-            <label for="subcategory2_id" :class="DEFAULT_LABEL"
-              >Sub kategori 3</label
-            >
-            <Field
-              as="select"
-              id="subcategory3_id"
-              name="subcategory3_id"
-              :class="DEFAULT_INPUT_FILE"
-              :disabled="isLoading"
-            >
-              <option :value="null" class="hover:bg-sky-200" disabled>
-                -- Pilih Sub Kategori 3 --
-              </option>
-              <option value="" class="hover:bg-sky-200">
-                (( Tanpa Sub Kategori 3 ))
-              </option>
-              <option
-                v-for="cat in subcategories3"
-                :value="cat.id"
-                :key="cat.id"
-                class="hover:bg-sky-200"
-              >
-                {{ cat.name }}
-              </option>
-            </Field>
-            <ErrorMessage name="subcategory2_id" class="text-red-500 text-sm" />
-          </div>
 
           <div class="flex justify-center gap-x-3 text-sm sm:text-lg">
             <button
-              :disabled="isLoading || meta.dirty !== true"
+              :disabled="isLoading || !meta.valid"
               type="submit"
               class="p-1.5 sm:p-3 min-w-18 sm:min-w-24 text-slate-50 font-medium bg-gradient-to-r from-blue-400 to-blue-500 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-400 rounded-lg disabled:opacity-50"
             >
@@ -509,7 +504,7 @@ onUpdated(() => {
                 <IconLoading class="inline w-6 h-6 fill-slate-300" />
                 <span>Loading...</span>
               </div>
-              <span v-else>Ubah Tautan Dokumen</span>
+              <span v-else>Simpan Subkategori {{ subNumber }}</span>
             </button>
             <button
               @click="
@@ -521,6 +516,16 @@ onUpdated(() => {
             >
               Batal
             </button>
+          </div>
+          <div
+            class="error-box text-red-600 py-3"
+            v-if="errors.subcategory1_id || errors.subcategory2_id"
+          >
+            {{
+              `Peringatan : Pastikan form terisi semua. ${
+                errors.subcategory1_id ?? ""
+              } ${errors.subcategory2_id ?? ""}`
+            }}
           </div>
         </Form>
         <div class="error-box text-red-600 py-3" v-if="errorMessage">
