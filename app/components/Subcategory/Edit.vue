@@ -107,6 +107,7 @@ async function triggerGetDataInside(
 // get the detail data to edit
 const keyForm = ref(0);
 const selector = ref("");
+const errorMessage = ref("");
 async function getDetailData() {
   if (props.id.length < 1) return;
 
@@ -125,6 +126,7 @@ async function getDetailData() {
 }
 async function getData(selector: string) {
   isLoading.value = true;
+  errorMessage.value = "";
   if (errorMessage.value.length != 0) errorMessage.value = "";
   const { data, error } = await supabase
     .from(props.table)
@@ -135,7 +137,7 @@ async function getData(selector: string) {
     isLoading.value = false;
     emit("show-error");
     errorMessage.value =
-      "Gagal memuat data tautan dokumen. Pesan error: " + error.message;
+      "Gagal memuat data sub kategori. Pesan error: " + error.message;
   }
   // getting inside the data
   if (data) {
@@ -143,7 +145,12 @@ async function getData(selector: string) {
     if (props.type === "subcategories2") {
       currentData.value["subcategory1_id"] = data.subcategories1.id;
       currentData.value["category_id"] = data.subcategories1.categories.id;
-      getDataInside(data.subcategories1.id,"subcategories1","id",subcategories1,defaultSelector
+      getDataInside(
+        data.subcategories1.id,
+        "subcategories1",
+        "id",
+        subcategories1,
+        defaultSelector
       );
     } else if (props.type === "subcategories3") {
       currentData.value["subcategory2_id"] = data.subcategories2.id;
@@ -151,9 +158,19 @@ async function getData(selector: string) {
         data.subcategories2.subcategories1.id;
       currentData.value["category_id"] =
         data.subcategories2.subcategories1.categories.id;
-      getDataInside(data.subcategories2.id,"subcategories2","id",subcategories2,defaultSelector
+      getDataInside(
+        data.subcategories2.id,
+        "subcategories2",
+        "id",
+        subcategories2,
+        defaultSelector
       );
-      getDataInside(data.subcategories2.subcategories1.id,"subcategories3","id",subcategories1,defaultSelector
+      getDataInside(
+        data.subcategories2.subcategories1.id,
+        "subcategories3",
+        "id",
+        subcategories1,
+        defaultSelector
       );
     } else {
       currentData.value["category_id"] = data.categories.id;
@@ -165,10 +182,11 @@ async function getData(selector: string) {
 
 // handler passed to <Form>
 async function handleSubmit(values: any) {
-  console.log("sunit called");
   isLoading.value = true;
   const icon_path: Ref<string | null> = ref(null);
   const photo_path: Ref<string | null> = ref(null);
+  const pathsToDelete = [];
+  // if there is new icon
   if (values.icon) {
     const { error } = await useUploadFile(
       icon_path,
@@ -178,9 +196,18 @@ async function handleSubmit(values: any) {
     );
     if (error) {
       errorMessage.value = error.message;
+      isLoading.value = false;
       return;
     }
+    if (currentData.value?.icon_path)
+      pathsToDelete.push(currentData.value?.icon_path);
+  } else {
+    // no new image but already exist
+    if (currentData.value?.icon_path)
+      icon_path.value = currentData.value?.icon_path;
   }
+
+  // if there is new photo
   if (values.photo) {
     const { error } = await useUploadFile(
       photo_path,
@@ -190,6 +217,26 @@ async function handleSubmit(values: any) {
     );
     if (error) {
       errorMessage.value = error.message;
+      isLoading.value = false;
+      return;
+    }
+    if (currentData.value?.icon_path)
+      pathsToDelete.push(currentData.value?.icon_path);
+  } else {
+    // no new image but already exist
+    if (currentData.value?.icon_path)
+      icon_path.value = currentData.value?.icon_path;
+  }
+
+  // if any previous photos exist
+  if (pathsToDelete.length > 0) {
+    const { error: errorUpload } = await useDeleteImages(
+      pathsToDelete,
+      supabase
+    );
+    if (errorUpload) {
+      errorMessage.value = errorUpload.message;
+      isLoading.value = false;
       return;
     }
   }
@@ -200,7 +247,7 @@ async function handleSubmit(values: any) {
   else if (subNumber.value == 3)
     temp["subcategory2_id"] = values.subcategory2_id;
 
-  insertData({
+  updateData({
     name: values.name,
     description: values.description,
     icon_path: icon_path.value,
@@ -210,15 +257,17 @@ async function handleSubmit(values: any) {
   isLoading.value = false;
 }
 // insert data to db
-const errorMessage = ref("");
-async function insertData(values: any) {
+async function updateData(values: any) {
   if (errorMessage.value.length != 0) errorMessage.value = "";
-  // console.log(values);
+  console.log(values);
 
-  const { error } = await supabase.from(props.table).insert(values);
+  const { error } = await supabase
+    .from(props.table)
+    .update(values as never)
+    .eq("id", props.id);
   if (error) {
     emit("show-error");
-    errorMessage.value = `Gagal membuat subkategori ${subNumber}. Pesan error:  + ${error.message}`;
+    errorMessage.value = `Gagal mengubah sub kategori ${subNumber}. Pesan error:  + ${error.message}`;
   } else {
     emit("show-success");
     emit("refresh");
@@ -263,7 +312,7 @@ function resetPhoto(setFieldValue: Function) {
 }
 // cleanup
 function reset() {
-  emit('reset');
+  emit("reset");
   errorMessage.value = "";
   subcategories1.value = [];
   subcategories2.value = [];
@@ -392,23 +441,24 @@ onUpdated(() => {
                 />
                 <span class="text-center">Foto Tersimpan</span>
               </div>
-            <div v-if="photoPreview" class="flex gap-x-3 items-center">
-              <div class="img-p">
-                <img
-                  :src="photoPreview"
-                  alt="Photo Preview"
-                  class="w-12 h-12 object-cover rounded border"
-                />
-                <span class="text-center">Foto Terunggah</span>
+              <div v-if="photoPreview" class="flex gap-x-3 items-center">
+                <div class="img-p">
+                  <img
+                    :src="photoPreview"
+                    alt="Photo Preview"
+                    class="w-12 h-12 object-cover rounded border"
+                  />
+                  <span class="text-center">Foto Terunggah</span>
+                </div>
+                <button
+                  type="button"
+                  class="h-fit p-2 bg-slate-800 text-slate-50 rounded"
+                  @click="resetPhoto(setFieldValue)"
+                >
+                  Reset Foto
+                </button>
               </div>
-              <button
-                type="button"
-                class="h-fit p-2 bg-slate-800 text-slate-50 rounded"
-                @click="resetPhoto(setFieldValue)"
-              >
-                Reset Foto
-              </button>
-            </div></div>
+            </div>
           </div>
 
           <!-- Kategori kegiatan -->

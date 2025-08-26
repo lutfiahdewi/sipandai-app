@@ -16,7 +16,7 @@ const isLoading = ref(false);
 watchEffect(() => {
   if (user.value) {
     // console.log("✅ Logged in as:", user.value.email);
-    navigateTo("/admin/category");
+    navigateTo("/admin/");
   } else {
     // console.log("❌ Not logged in");
   }

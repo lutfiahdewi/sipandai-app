@@ -69,6 +69,10 @@ async function deleteData(table: string, id: string): Promise<boolean> {
   modal.value?.close(); // ✅ close modal
   return true;
 }
+function reset(){
+  errorMessageDelete.value='';
+  modal.value?.close();
+}
 </script>
 
 <template>
@@ -78,7 +82,7 @@ async function deleteData(table: string, id: string): Promise<boolean> {
     class-header=" bg-red-400 text-slate-800 font-semibold text-base sm:text-xl"
     class-body=" h-fit "
     class-footer="  "
-    @click-outside="modal?.close()"
+    @click-outside="reset()"
   >
     <template #header>
       <span>Hapus Tautan Dokumen</span>
@@ -113,7 +117,7 @@ async function deleteData(table: string, id: string): Promise<boolean> {
           <span v-else>Hapus</span>
         </button>
         <button
-          @click="modal?.close"
+          @click="reset()"
           class="p-1 sm:p-2 min-w-18 sm:min-w-24 bg-slate-300 rounded-lg hover:bg-slate-400 focus:ring-4 focus:outline-none focus:ring-slate-300"
         >
           Batal

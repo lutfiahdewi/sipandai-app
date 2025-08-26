@@ -78,7 +78,6 @@ async function triggerGetDataInside(
 
 // handler passed to <Form>
 async function handleSubmit(values: any) {
-  console.log("sunit called");
   isLoading.value = true;
   const icon_path: Ref<string | null> = ref(null);
   const photo_path: Ref<string | null> = ref(null);

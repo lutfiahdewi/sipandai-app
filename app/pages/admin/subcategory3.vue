@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertError, AlertSuccess, DocumentEdit, SubcategoryDelete, SubcategoryEdit } from "#components";
+import { AlertError, AlertSuccess, SubcategoryDelete, SubcategoryEdit } from "#components";
 import type { Database } from "~/types/supabase";
 
 // Ubah tableName dan columns sesuai nama dan kolom tabel

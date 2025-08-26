@@ -77,6 +77,10 @@ async function deleteData(table: string, id: string): Promise<boolean> {
 onMounted(() => {
   subNumber.value = Number(props.table.charAt(props.table.length - 1));
 });
+function reset(){
+  errorMessageDelete.value='';
+  modal.value?.close();
+}
 </script>
 
 <template>
@@ -86,6 +90,7 @@ onMounted(() => {
     class-header=" bg-red-400 text-slate-800 font-semibold text-base sm:text-xl"
     class-body=" h-fit "
     class-footer="  "
+    @click-outside="reset()"
   >
     <template #header>
       <span>Hapus Sub Kategori</span>
@@ -120,7 +125,7 @@ onMounted(() => {
           <span v-else>Hapus</span>
         </button>
         <button
-          @click="modal?.close"
+          @click="reset()"
           class="p-1 sm:p-2 min-w-18 sm:min-w-24 bg-slate-300 rounded-lg hover:bg-slate-400 focus:ring-4 focus:outline-none focus:ring-slate-300"
         >
           Batal
