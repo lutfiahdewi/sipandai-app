@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { DEFAULT_PADDING_X } from "@/utils/constants";
+import { useDebounceFn } from "@vueuse/core";
 const isOpen = ref(false);
 const toggleMobileMenu = () => {
   isOpen.value = !isOpen.value;
@@ -14,6 +15,35 @@ const menuItems: menu[] = [
   { name: "Beranda", url: "/" },
   { name: "Tentang", url: "/about" },
 ];
+
+// For searching feature
+import debounce from 'lodash/debounce' // debounced.cancel() is available here [7]
+
+const router = useRouter() // Nuxt router composable [6]
+const route = useRoute()
+
+const q = ref<string>((route.query.q as string) || '')
+
+const goToSearch = async (replace = false) => {
+  const to = { path: '/search', query: { q: q.value || undefined, page: '1' } }
+  return replace ? navigateTo(to, { replace: true }) : navigateTo(to) // Nuxt navigation helper [1]
+}
+
+const debouncedNav = debounce(async () => {
+  if (route.path !== '/search') await goToSearch(false)
+  else await goToSearch(true)
+}, 400)
+
+watch(q, () => {
+  // Trigger on >=1 char or when cleared
+  if (q.value.length >= 1 || q.value.length === 0) debouncedNav()
+})
+
+const onSubmit = async () => {
+  debouncedNav.cancel() // avoid double navigation on submit [7]
+  if (route.path !== '/search') await goToSearch(false)
+  else await goToSearch(true)
+}
 </script>
 
 <template>
@@ -49,7 +79,7 @@ const menuItems: menu[] = [
 
       <!-- Desktop Menu -->
       <nav class="hidden sm:flex space-x-6 items-center justify-between">
-        <InputSearch />
+        <InputSearch v-model="q" @submit="onSubmit"/>
         <NuxtLink
           v-for="item in menuItems"
           :to="item.url"
@@ -65,7 +95,7 @@ const menuItems: menu[] = [
       v-if="isOpen"
       class="sm:hidden p-2 bg-slate-200 border-t border-gray-500"
     >
-      <InputSearch />
+      <InputSearch v-model="q" @submit="onSubmit" />
       <NuxtLink
         v-for="item in menuItems"
         :to="item.url"

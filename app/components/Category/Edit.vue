@@ -228,7 +228,7 @@ function reset() {
                   <img
                     :src="iconPreview"
                     alt="Icon Preview"
-                    class="w-12 h-12 object-cover rounded border"
+                    class="w-12 h-12 object-contain rounded border"
                   />
                   <span class="text-center">Icon Terunggah</span>
                 </div>

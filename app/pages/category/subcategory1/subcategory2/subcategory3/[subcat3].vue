@@ -10,7 +10,7 @@ const route = useRoute();
 const supabase = useSupabaseClient();
 
 const subcategories3: Ref<
-  Database["public"]["Tables"]["subcategories3"]["Row"]
+  Database["public"]["Tables"]["subcategories3"]["Row"] 
 > = ref([]);
 const documents: Ref<Database["public"]["Tables"]["documents"]["Row"][]> = ref(
   []

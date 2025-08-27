@@ -60,10 +60,14 @@ async function triggerGetDataInside(
   e: Event,
   targetTable: "subcategories1" | "subcategories2"
 ) {
+  if(props.type==="subcategories1" && targetTable === "subcategories1") return
+  else if(props.type==="subcategories2" && targetTable === "subcategories2") return
+
   if (targetTable == "subcategories1") {
     subcategories1.value = [];
     subcategories2.value = [];
   } else subcategories2.value = [];
+
 
   const target = e.target as HTMLSelectElement;
   if (!target.value) return;
