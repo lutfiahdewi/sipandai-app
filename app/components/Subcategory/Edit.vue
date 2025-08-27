@@ -220,12 +220,12 @@ async function handleSubmit(values: any) {
       isLoading.value = false;
       return;
     }
-    if (currentData.value?.icon_path)
-      pathsToDelete.push(currentData.value?.icon_path);
+    if (currentData.value?.photo_path)
+      pathsToDelete.push(currentData.value?.photo_path);
   } else {
     // no new image but already exist
-    if (currentData.value?.icon_path)
-      icon_path.value = currentData.value?.icon_path;
+    if (currentData.value?.photo_path)
+      photo_path.value = currentData.value?.photo_path;
   }
 
   // if any previous photos exist
