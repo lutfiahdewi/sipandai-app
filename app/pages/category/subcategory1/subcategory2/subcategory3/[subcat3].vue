@@ -5,12 +5,13 @@ import { ref, onMounted } from "vue";
 import type { Database } from "~/types/supabase";
 import type { QueryResult, QueryData, QueryError } from "@supabase/supabase-js";
 import { useNavigation } from "~/composables/useNavigation";
+import Breadcrumb from "~/components/Breadcrumb.vue";
 
 const route = useRoute();
 const supabase = useSupabaseClient();
 
 const subcategories3: Ref<
-  Database["public"]["Tables"]["subcategories3"]["Row"] 
+  Database["public"]["Tables"]["subcategories3"]["Row"]
 > = ref([]);
 const documents: Ref<Database["public"]["Tables"]["documents"]["Row"][]> = ref(
   []
@@ -61,20 +62,7 @@ useHead({
         title-class="text-3xl sm:text-4xl lg:text-6xl font-bold text-gray-800"
       >
         <!-- breadcrumbs -->
-        <nav>
-          <NuxtLink v-if="nav.category" :to="`/category/${nav.category.value}`">{{
-            nav.category.value
-          }}</NuxtLink>
-          <NuxtLink v-if="nav.subcat1" :to="`/category/subcategory1/${nav.subcat1.value}`">{{
-            ' > '+nav.subcat1.value
-          }}</NuxtLink>
-          <NuxtLink v-if="nav.subcat2" :to="`/category/subcategory1/subcategory2/${nav.subcat2.value}`">{{
-            ' > '+nav.subcat2.value
-          }}</NuxtLink>
-          <NuxtLink v-if="nav.subcat3" :to="`/category/subcategory1/subcategory2/subcategory3/${nav.subcat3.value}`">{{
-            ' > '+nav.subcat3.value
-          }}</NuxtLink>
-        </nav>
+        <Breadcrumb />
         <!-- Gambar -->
         <img
           v-if="subcategories3.photo_path"

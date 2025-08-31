@@ -9,8 +9,9 @@ import { useNavigation } from "~/composables/useNavigation";
 const route = useRoute();
 const supabase = useSupabaseClient();
 
-const subcategories1: Ref<Database["public"]["Tables"]["subcategories1"]["Row"] | null> =
-  ref(null);
+const subcategories1: Ref<
+  Database["public"]["Tables"]["subcategories1"]["Row"] | null
+> = ref(null);
 const subcategories2: Ref<
   Database["public"]["Tables"]["subcategories2"]["Row"][]
 > = ref([]);
@@ -24,7 +25,7 @@ nav.subcat1.value = subcat;
 onMounted(async () => {
   const queryAll = supabase
     .from("subcategories1")
-    .select( `*, subcategories2(id, name, slug, icon_path)`)
+    .select(`*, subcategories2(id, name, slug, icon_path)`)
     .eq("slug", subcat)
     .single();
 
@@ -34,13 +35,13 @@ onMounted(async () => {
   const result: queryBulk = data;
   subcategories1.value = result;
   subcategories2.value = result.subcategories2;
-  
+
   //data dokumen
-  const { data: dataDocuments, error : errorDocuments } = await supabase
-  .from('documents')
-  .select('id, name, slug, icon_path, url')
-  .eq('subcategory1_id', subcategories1.value.id)
-  .is('subcategory2_id', null) 
+  const { data: dataDocuments, error: errorDocuments } = await supabase
+    .from("documents")
+    .select("id, name, slug, icon_path, url")
+    .eq("subcategory1_id", subcategories1.value.id)
+    .is("subcategory2_id", null);
   documents.value = dataDocuments;
 
   isLoading.value = false;
@@ -63,6 +64,8 @@ useHead({
         :section-class="DEFAULT_PADDING_X_MINUS + ' pt-4 bg-orange-100 '"
         title-class="text-3xl sm:text-4xl lg:text-6xl font-bold text-gray-800"
       >
+        <!-- breadcrumbs -->
+        <Breadcrumb />
         <!-- Gambar -->
         <img
           v-if="subcategories1.photo_path"
@@ -83,7 +86,7 @@ useHead({
       <SectionList
         v-if="true"
         id="categoryList"
-        title="Subkategori"
+        title="Subkategori 2"
         section-class=""
         title-class="text-orange-600"
       >

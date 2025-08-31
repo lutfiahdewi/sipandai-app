@@ -71,7 +71,7 @@ const go = (p: number) => {
       <NuxtLink
         v-for="it in items"
         :key="it.id"
-        class="block p-3 border rounded hover:bg-orange-50 hover:border-orange-200 transition delay-150 duration-300 ease-in-out hover:-translate-y-1 hover:scale-103"
+        class="block p-3 border rounded hover:bg-orange-50 hover:border-orange-200 transition duration-300 ease-in-out hover:-translate-y-1 hover:scale-103"
         :to="it.url"
         target="_blank"
       >

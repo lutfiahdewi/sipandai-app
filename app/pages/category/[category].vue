@@ -88,7 +88,7 @@ useHead({
       <SectionList
         v-if="true"
         id="categoryList"
-        title="Subkategori"
+        title="Subkategori 1"
         section-class=""
         title-class="text-orange-600"
       >
