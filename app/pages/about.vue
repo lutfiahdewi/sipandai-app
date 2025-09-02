@@ -1,6 +1,4 @@
 <script lang="ts">
-import { NuxtLink } from '#components';
-
 </script>
 <template>
   <div class="flex flex-col min-h-[70vh] py-4 sm:py-8">
@@ -49,19 +47,21 @@ import { NuxtLink } from '#components';
         permasalahan Belum Efisiennya Pengelolaan Dokumentasi Berkas Elektronik
         Tahun 2025.
       </p>
-      <p>Panduan penggunaan dapat diakses di: 
-        <a to="https://www.canva.com/design/DAGxMi8FRn4/r0yJ7piSPNY-qXG9rvNbsg/edit?utm_content=DAGxMi8FRn4&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" target="_blank" class="text-blue-600 underline">
+      <p class="font-semibold">Panduan penggunaan dapat diakses di: 
+        <NuxtLink to="https://www.canva.com/design/DAGxMi8FRn4/r0yJ7piSPNY-qXG9rvNbsg/edit?utm_content=DAGxMi8FRn4&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" target="_blank" class="text-blue-600 underline bg-slate-200 px-2 py-1 rounded ms-1 hover:bg-slate-300">
             Link
-        </a>
+        </NuxtLink>
       </p>
+      <p>Penggunaan ikon yang seragam modelnya dapat mengakses link berikut:</p>
       <a
         href="https://www.flaticon.com/free-icons/population"
         title="population icons"
         target="_blank"
         class="text-blue-600 underline"
-        >Population icons created by Freepik - Flaticon</a
+        >Icons created by Freepik - Flaticon</a
       >
     </div>
+    
     <div class="flex-1"></div>
   </div>
 </template>
