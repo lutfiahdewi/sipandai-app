@@ -13,17 +13,11 @@ const categories: Ref<Database["public"]["Tables"]["categories"]["Row"][]> =
 // const mainCategory: Ref<Database["public"]["Tables"]["categories"]["Row"] | undefined> = ref()
 const mainDocuments: Ref<Database["public"]["Tables"]["documents"]["Row"][]> =
   ref([]);
+const polmanDocuments: Ref<Database["public"]["Tables"]["documents"]["Row"][]> =
+  ref([]);
 
-onMounted(async () => {
+async function getDocumentsFiltered(name: string) {
   const { data, error } = await supabase
-    .from("categories")
-    .select("id, name, description, icon_path, slug");
-  if (!error) {
-    _.remove(data, { name: "Main" }); //Exclude the main category
-    categories.value = data;
-  }
-
-  const { data: dataAplikasi, error: errorAplikasi } = await supabase
     .from("documents")
     .select(
       `
@@ -35,9 +29,33 @@ onMounted(async () => {
     )
   `
     )
-    .eq("categories.name", "Main"); // filter pakai nama kategori
+    .eq("categories.name", name); // filter pakai nama kategori
+  if (!error) {
+    data.sort((a, b) => {
+      const dateA = new Date(a.activity_date);
+      const dateB = new Date(b.activity_date);
+      return dateA - dateB; // Subtracting Date objects yields their difference in milliseconds
+    });
+  }
+  return { data, error };
+}
 
+onMounted(async () => {
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id, name, description, icon_path, slug");
+  if (!error) {
+    _.remove(data, { name: "Main" }); //Exclude the main category
+    _.remove(data, { name: "polman" }); //Exclude the polman category
+    categories.value = data;
+  }
+  const { data: dataAplikasi, error: errorAplikasi } =
+    await getDocumentsFiltered("Main");
   if (!errorAplikasi) mainDocuments.value = dataAplikasi;
+  const { data: dataPolman, error: errorPolman } = await getDocumentsFiltered(
+    "polman"
+  );
+  if (!errorPolman) polmanDocuments.value = dataPolman;
 });
 </script>
 
@@ -95,21 +113,35 @@ onMounted(async () => {
       />
     </SectionList>
     <hr class="border-gray-500" />
+
+    <!-- Polman App Section -->
+    <SectionList title="Tautan Dokumen BPS Polman" section-class="bg-sky-100 ">
+      <CardLink
+        v-for="doc in polmanDocuments"
+        :key="doc.id"
+        :id="doc.id"
+        :name="doc.name"
+        :desc="doc.description"
+        :icon-path="useGetImageUrl(doc.icon_path, supabase)"
+        :url="doc.url"
+      />
+    </SectionList>
+    <hr class="border-gray-500" />
+
     <!-- Category Section -->
     <SectionList
       id="categoryList"
       title="Kategori tim dan lain-lain"
       title-class="text-orange-600"
     >
-        <CardCategory
-          v-for="cat in categories"
-          :key="cat.id"
-          :id="cat.id"
-          :name="cat.name"
-          :slug="cat.slug"
-          :icon-path="useGetImageUrl(cat.icon_path, supabase)"
-        />
-
+      <CardCategory
+        v-for="cat in categories"
+        :key="cat.id"
+        :id="cat.id"
+        :name="cat.name"
+        :slug="cat.slug"
+        :icon-path="useGetImageUrl(cat.icon_path, supabase)"
+      />
     </SectionList>
   </div>
 </template>
